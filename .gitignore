@@ -1,0 +1,22 @@
+# --- secrets: never commit
+.env
+
+# --- your own data (reels you sent, jobs, usage, settings, reminders)
+reels/
+reminders/reminders.json
+reminders/REMINDERS.md
+reminders/.dryrun
+reminders/dryrun.log
+
+# --- runtime files
+__pycache__/
+*.pyc
+*.lock
+*.tmp
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# --- the owner's personal guide and page previews (the repo ships docs/Reel Agent Setup Guide.pdf)
+docs/guide/
+docs/Reel Agent Guide*.pdf
+docs/*/preview/

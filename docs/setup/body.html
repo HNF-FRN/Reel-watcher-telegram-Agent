@@ -1,0 +1,602 @@
+<!-- =================================================================== COVER -->
+<section class="cover">
+  <div class="grid"></div>
+  <div class="top"><span>Setup guide</span><span>Windows · Telegram · Claude Code</span><span>v1 · 2026</span></div>
+  <div class="mark">
+    <svg width="176mm" height="92mm" viewBox="0 0 176 92" fill="none" stroke="#F6F4EF" stroke-width=".35">
+      <rect x="2" y="10" width="34" height="66" rx="5" stroke-opacity=".9"/>
+      <rect x="6" y="18" width="20" height="6" rx="2" stroke-opacity=".5"/>
+      <rect x="10" y="28" width="22" height="6" rx="2" fill="#FF5A1F" stroke="none"/>
+      <rect x="6" y="38" width="24" height="10" rx="2" stroke-opacity=".5"/>
+      <rect x="14" y="52" width="18" height="6" rx="2" fill="#FF5A1F" stroke="none"/>
+      <line x1="15" y1="71" x2="23" y2="71" stroke-opacity=".6"/>
+      <path d="M36 43 H70" stroke-dasharray="1.2 1.4" stroke-opacity=".7"/>
+      <circle cx="70" cy="43" r="1.3" fill="#FF5A1F" stroke="none"/>
+      <rect x="70" y="30" width="36" height="26" rx="2" stroke-opacity=".95"/>
+      <text x="74" y="38" fill="#F6F4EF" stroke="none" font-family="Geist Mono" font-size="3" letter-spacing=".3" opacity=".7">YOUR PC</text>
+      <line x1="74" y1="43" x2="102" y2="43" stroke-opacity=".3"/>
+      <line x1="74" y1="47" x2="96" y2="47" stroke-opacity=".3"/>
+      <line x1="74" y1="51" x2="99" y2="51" stroke-opacity=".3"/>
+      <path d="M106 36 C118 36 118 14 130 14" stroke-opacity=".7"/>
+      <path d="M106 43 H130" stroke-opacity=".7"/>
+      <path d="M106 50 C118 50 118 72 130 72" stroke-opacity=".7"/>
+      <rect x="130" y="6" width="44" height="16" rx="2" stroke-opacity=".8"/>
+      <rect x="130" y="35" width="44" height="16" rx="2" stroke="#FF5A1F" stroke-width=".5"/>
+      <rect x="130" y="64" width="44" height="16" rx="2" stroke-opacity=".8"/>
+      <text x="134" y="15.5" fill="#F6F4EF" stroke="none" font-family="Geist Mono" font-size="3" letter-spacing=".3" opacity=".75">WATCH · GEMINI</text>
+      <text x="134" y="44.5" fill="#FF5A1F" stroke="none" font-family="Geist Mono" font-size="3" letter-spacing=".3">BUILD · CLAUDE</text>
+      <text x="134" y="73.5" fill="#F6F4EF" stroke="none" font-family="Geist Mono" font-size="3" letter-spacing=".3" opacity=".75">REMIND · YOU</text>
+      <path d="M88 56 V88 H19 V76" stroke="#FF5A1F" stroke-width=".35" stroke-dasharray="1.2 1.4"/>
+      <text x="24" y="86.6" fill="#FF5A1F" stroke="none" font-family="Geist Mono" font-size="2.6" letter-spacing=".3">APPROVE · STEER · RESULTS</text>
+    </svg>
+  </div>
+  <div class="h1" role="presentation">Reel<br>Agent<span>.</span></div>
+  <div class="sub">
+    <div class="t">Set up your own Telegram bot that watches reels, explains them, and builds what they show on your PC, with your approval.</div>
+    <div class="v">About 40 minutes<br>No coding needed</div>
+  </div>
+  <div class="foot"><span>Setup guide</span><span>Keep with the repository</span></div>
+</section>
+
+<!-- =================================================================== CONTENTS -->
+<section class="chapter" style="break-before: auto;">
+  <div class="opener">
+    <div class="num">00<small>Contents</small></div>
+    <div>
+      <h2>What's inside</h2>
+      <p class="lead">Chapters 01–07 take you from nothing to a working bot. The rest is for making it yours, fixing things, and keeping it up to date.</p>
+    </div>
+  </div>
+  <ol class="toc">
+    <li><span class="n">01</span><span class="ti">What you'll have<small>What the bot does and how it's put together</small></span><span class="pg" data-toc="ch01">—</span></li>
+    <li><span class="n">02</span><span class="ti">Before you start<small>Accounts, software, costs, privacy</small></span><span class="pg" data-toc="ch02">—</span></li>
+    <li><span class="n">03</span><span class="ti">Get the code<small>Install the basics and download the project</small></span><span class="pg" data-toc="ch03">—</span></li>
+    <li><span class="n">04</span><span class="ti">Create your Telegram bot<small>Two minutes with BotFather</small></span><span class="pg" data-toc="ch04">—</span></li>
+    <li><span class="n">05</span><span class="ti">Get a Gemini key<small>Free, and it makes the bot much better</small></span><span class="pg" data-toc="ch05">—</span></li>
+    <li><span class="n">06</span><span class="ti">Run setup<small>One command does the rest</small></span><span class="pg" data-toc="ch06">—</span></li>
+    <li><span class="n">07</span><span class="ti">Start, pair and test<small>Connect your phone and lock the bot</small></span><span class="pg" data-toc="ch07">—</span></li>
+    <li><span class="n">08</span><span class="ti">Your first reel<small>Watch, plan, build, approve</small></span><span class="pg" data-toc="ch08">—</span></li>
+    <li><span class="n">09</span><span class="ti">Make it yours<small>Models, modes, reminders, autostart</small></span><span class="pg" data-toc="ch09">—</span></li>
+    <li><span class="n">10</span><span class="ti">Troubleshooting<small>Setup problems and their fixes</small></span><span class="pg" data-toc="ch10">—</span></li>
+    <li><span class="n">11</span><span class="ti">Update and uninstall<small>Staying current, removing it cleanly</small></span><span class="pg" data-toc="ch11">—</span></li>
+    <li><span class="n">—</span><span class="ti">Quick reference<small>Setup and everyday commands on one page</small></span><span class="pg" data-toc="qr">—</span></li>
+  </ol>
+</section>
+
+<!-- =================================================================== 01 -->
+<section class="chapter" id="ch01">
+  <div class="opener">
+    <div class="num">01<small>Overview</small></div>
+    <div>
+      <h2>What you'll have</h2>
+      <p class="lead">A Telegram bot, running on your own PC, that turns the reels you scroll past into things you can actually use.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div class="side"><span class="label">In one line</span>You scroll. It watches, explains and builds. You approve from your phone.</div>
+    <div>
+      <p>You see a reel about a tool, an AI workflow or a Claude skill. You share it with your bot. About a minute later it replies with what the reel shows: the exact names, links and commands, and what it would take to set it up. One more message turns that into a plan, and one more into a build on your PC that asks you before every command it runs.</p>
+      <p>It's built on <b>Claude Code</b>, Anthropic's AI coding tool, which runs the bot and the builds on your own Claude plan. <b>Gemini</b> watches the videos, and <b>Telegram</b> is how you talk to it from anywhere.</p>
+    </div>
+  </div>
+
+  <div class="spec">
+    <div><span class="label">You talk to it on</span><span class="v">Telegram, any phone</span></div>
+    <div><span class="label">It runs on</span><span class="v">Your Windows PC</span></div>
+    <div><span class="label">Brain</span><span class="v">Claude Code (your plan)</span></div>
+    <div><span class="label">Watches with</span><span class="v">Gemini (free key)</span></div>
+    <div><span class="label">Backup watcher</span><span class="v">Local, no key needed</span></div>
+    <div><span class="label">Builds with</span><span class="v">Haiku · Sonnet · Opus · Fable</span></div>
+  </div>
+
+  <h3 style="margin-top: 5mm;"><span class="k">1.1</span> What it can do</h3>
+  <div class="flow">
+    <div><span class="n">WATCH</span><div class="h">Any reel</div><p>Instagram, TikTok, YouTube, X, a video file or screenshots. Several at once.</p></div>
+    <div><span class="n">EXPLAIN</span><div class="h">A breakdown</div><p>What it is, exact tools, links and commands, and what setup takes.</p></div>
+    <div><span class="n">BUILD</span><div class="h">On your PC</div><p>Plans and builds in their own folder. Every command needs your yes.</p></div>
+    <div><span class="n">REMIND</span><div class="h">Anything</div><p><span class="cmd">/remind tomorrow 9:00 …</span> pings your phone at that time.</p></div>
+  </div>
+
+  <div class="note">
+    <span class="label">It never obeys a reel</span>
+    <p>Whatever a video says ("run this", "paste this command") is treated as information only. Only your own Telegram messages give instructions, and nothing changes on your PC without your approval.</p>
+  </div>
+  <div class="note plain" >
+    <span class="label">How to read this guide</span>
+    <p>Things you type on the PC are in grey boxes. Commands you send to the bot in Telegram look like <span class="cmd">/plan 4</span>. <b>N</b> means a reel number: every reel you send gets one.</p>
+  </div>
+</section>
+
+<!-- =================================================================== 02 -->
+<section class="chapter" id="ch02">
+  <div class="opener">
+    <div class="num">02<small>Requirements</small></div>
+    <div>
+      <h2>Before you start</h2>
+      <p class="lead">Check you have these. Everything except the Claude plan is free.</p>
+    </div>
+  </div>
+
+  <h3 class="mt0"><span class="k">2.1</span> Accounts</h3>
+  <table>
+    <thead><tr><th>Account</th><th>What it's for</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td><b>Claude</b> Pro or Max</td><td class="wrap">Runs the bot and every plan and build. Plans and builds use your plan's usage.</td><td>Paid plan</td></tr>
+      <tr><td><b>Telegram</b></td><td class="wrap">The app on your phone. You create your bot inside it.</td><td>Free</td></tr>
+      <tr><td><b>Google</b> <span class="tag">recommended</span></td><td class="wrap">A free Gemini API key: the main reel watcher, about 60 reels a day.</td><td>Free tier</td></tr>
+      <tr><td><b>OpenAI</b> <span class="tag">optional</span></td><td class="wrap">Only if you also want to build with Codex (GPT).</td><td>Your plan</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="k">2.2</span> Your PC</h3>
+  <table>
+    <thead><tr><th>You need</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Windows 10 or 11</td><td class="wrap">The start-up, autostart and reminder parts use Windows features.</td></tr>
+      <tr><td>A PC that stays on</td><td class="wrap">The bot only answers while the PC is awake. Chapter 09 shows how to stop it sleeping.</td></tr>
+      <tr><td>About 3 GB of disk</td><td class="wrap">Tools, a speech model for the backup watcher, and your reels.</td></tr>
+      <tr><td>Python, Node.js, Git, Claude Code</td><td class="wrap">Chapter 03 installs them in one go.</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="k">2.3</span> Where your data goes</h3>
+  <div class="two">
+    <table>
+      <tbody>
+        <tr><td>Videos you send</td><td class="wrap">To Google Gemini to be watched, or processed locally if you skip the key.</td></tr>
+        <tr><td>Plans and builds</td><td class="wrap">Through your own Claude account.</td></tr>
+        <tr><td>Your messages</td><td class="wrap">Through Telegram, to your bot only.</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <tbody>
+        <tr><td>Keys and token</td><td class="wrap">Stay on your PC. Git never uploads them.</td></tr>
+        <tr><td>Reels and reminders</td><td class="wrap">Stay on your PC, in the project folder.</td></tr>
+        <tr><td>Who can use it</td><td class="wrap">Only the Telegram account you pair.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =================================================================== 03 -->
+<section class="chapter" id="ch03">
+  <div class="opener">
+    <div class="num">03<small>Download</small></div>
+    <div>
+      <h2>Get the code</h2>
+      <p class="lead">Install four basic tools, sign in to Claude Code once, and download the project.</p>
+    </div>
+  </div>
+
+  <ol class="steps">
+    <li><span class="no">01</span><div class="bd"><span class="t">Open PowerShell</span>
+      <p>Press <b>Start</b>, type <b>PowerShell</b>, and open <b>Windows PowerShell</b>. Every grey box in this guide is typed there.</p></div></li>
+    <li><span class="no">02</span><div class="bd"><span class="t">Install the basics</span>
+      <p>Skip anything you already have. When it's done, <b>close PowerShell and open a new one</b> so it finds the new tools.</p>
+<pre>winget install Python.Python.3.13 OpenJS.NodeJS.LTS Git.Git
+irm https://claude.ai/install.ps1 | iex      <span class="c"># Claude Code</span></pre></div></li>
+    <li><span class="no">03</span><div class="bd"><span class="t">Sign in to Claude Code</span>
+      <p>Run <code>claude</code>, follow the sign-in in your browser with your Claude account, then type <code>/exit</code>.</p></div></li>
+    <li><span class="no">04</span><div class="bd"><span class="t">Download the project</span>
+      <p>Pick where it should live (it needs a folder of its own; builds go in a <code>builds</code> folder next to it), then:</p>
+<pre>cd $HOME
+git clone https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git reel-agent
+cd reel-agent</pre>
+      <p class="muted">No Git? On the repository page choose <b>Code → Download ZIP</b>, unzip it, and open PowerShell in that folder.</p></div></li>
+  </ol>
+
+  <h3><span class="k">3.1</span> What you downloaded</h3>
+  <div class="cols">
+    <div class="side"><span class="label">You'll rarely touch</span>Only <code>.env</code> (your key) and, if you like, <code>CLAUDE.md</code> (how the bot behaves).</div>
+<pre class="tree"><span class="d">reel-agent\</span>
+├─ setup.cmd · setup.py   <span class="x">guided setup (chapter 06)</span>
+├─ bot.cmd · bot.ps1      <span class="x">start / stop / status</span>
+├─ start.ps1              <span class="x">the bot itself</span>
+├─ CLAUDE.md              <span class="x">how the bot behaves</span>
+├─ MANUAL.md              <span class="x">every command (/manual)</span>
+├─ .env.example           <span class="x">becomes .env with your key</span>
+├─ <span class="d">.claude\</span>               <span class="x">skills, agent, permissions</span>
+├─ <span class="d">reminders\</span>             <span class="x">the reminder list</span>
+└─ <span class="d">docs\</span>                  <span class="x">this guide</span></pre>
+  </div>
+</section>
+
+<!-- =================================================================== 04 -->
+<section class="chapter" id="ch04">
+  <div class="opener">
+    <div class="num">04<small>Telegram</small></div>
+    <div>
+      <h2>Create your Telegram bot</h2>
+      <p class="lead">Telegram's own bot, BotFather, makes one for you in a short chat. You'll get a token: the key to your bot.</p>
+    </div>
+  </div>
+  <div class="two">
+    <div>
+      <ol class="steps">
+        <li><span class="no">01</span><div class="bd"><span class="t">Open BotFather</span><p>In Telegram, search for <b>@BotFather</b> (blue check mark) and tap <b>Start</b>.</p></div></li>
+        <li><span class="no">02</span><div class="bd"><span class="t">Send /newbot</span><p>It asks for a <b>name</b>: anything, like <i>My Reel Agent</i>.</p></div></li>
+        <li><span class="no">03</span><div class="bd"><span class="t">Pick a username</span><p>It must be unique and end in <code>bot</code>, like <code>anna_reels_bot</code>. That becomes your bot's link.</p></div></li>
+        <li><span class="no">04</span><div class="bd"><span class="t">Copy the token</span><p>BotFather replies with a long token like <code>123456789:AAHf…</code>. Copy all of it. Setup asks for it in chapter 06.</p></div></li>
+      </ol>
+      <div class="note"><span class="label">The token is a password</span><p>Anyone who has it controls your bot. Don't post it, screenshot it or send it to anyone. If it leaks, send <span class="cmd">/revoke</span> to BotFather for a new one.</p></div>
+    </div>
+    <div>
+      <div class="chat">
+        <div class="bar"><div class="av" style="background:#2AABEE; color:#fff;">BF</div><div class="who">BotFather<small>bot</small></div></div>
+        <div class="msg out">/newbot<span class="tm">10:02</span></div>
+        <div class="msg">Alright, a new bot. How are we going to call it? Please choose a name for your bot.<span class="tm">10:02</span></div>
+        <div class="msg out">My Reel Agent<span class="tm">10:02</span></div>
+        <div class="msg">Good. Now let's choose a username for your bot. It must end in `bot`.<span class="tm">10:02</span></div>
+        <div class="msg out">anna_reels_bot<span class="tm">10:03</span></div>
+        <div class="msg">Done! Congratulations on your new bot. You will find it at t.me/anna_reels_bot.
+
+Use this token to access the HTTP API:
+<code>123456789:AAHfiqksKZ8…</code>
+Keep your token secure.<span class="tm">10:03</span></div>
+      </div>
+      <div class="figure"><div class="cap"><b>Figure 1.</b> The whole conversation. Your wording may differ slightly.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== 05 -->
+<section class="chapter" id="ch05">
+  <div class="opener">
+    <div class="num">05<small>Gemini</small></div>
+    <div>
+      <h2>Get a Gemini key</h2>
+      <p class="lead">Optional, free, and worth it. Gemini watches the whole video with sound, which gives far better breakdowns than the backup watcher.</p>
+    </div>
+  </div>
+  <ol class="steps">
+    <li><span class="no">01</span><div class="bd"><span class="t">Open Google AI Studio</span><p>Go to <b>aistudio.google.com/apikey</b> and sign in with your Google account.</p></div></li>
+    <li><span class="no">02</span><div class="bd"><span class="t">Create a key</span><p>Choose <b>Create API key</b>. If it asks for a project, let it create one. Copy the key (it starts with <code>AIza</code>). Setup asks for it in chapter 06.</p></div></li>
+  </ol>
+  <div class="two">
+    <div>
+      <h3 class="mt0"><span class="k">5.1</span> What the free tier allows</h3>
+      <p>About <b>20 videos a day and 5 a minute per model</b>, across three models: roughly 60 reels a day. It resets at midnight Pacific time. When it runs out, the bot quietly switches to the backup watcher and tells you so. <span class="cmd">/quota</span> shows how much is left.</p>
+    </div>
+    <div>
+      <h3 class="mt0"><span class="k">5.2</span> Without a key</h3>
+      <p>Everything still works. The backup watcher takes still frames and transcribes the audio on your PC. The first time, it downloads a speech model of about 500 MB. Breakdowns are a little less thorough.</p>
+    </div>
+  </div>
+  <div class="note plain"><span class="label">Privacy</span><p>With a key, the videos you send are uploaded to Google to be watched. Google may use free-tier data to improve its products. If that matters to you, skip the key or enable billing on it.</p></div>
+</section>
+
+<!-- =================================================================== 06 -->
+<section class="chapter" id="ch06">
+  <div class="opener">
+    <div class="num">06<small>Setup</small></div>
+    <div>
+      <h2>Run setup</h2>
+      <p class="lead">One command checks everything, installs what's missing and saves your token and key. It asks before every change, and you can run it again any time.</p>
+    </div>
+  </div>
+<pre>cd $HOME\reel-agent
+.\setup</pre>
+  <p class="muted">Want to see what it would do first? <code>.\setup --check</code> only reports, and changes nothing.</p>
+
+  <h3><span class="k">6.1</span> What it does, step by step</h3>
+  <table>
+    <thead><tr><th style="width: 42mm;">Step</th><th>What happens</th><th style="width: 38mm;">You answer</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap"><b>1 · Tools</b></td><td class="wrap">Checks Python, Git, Node.js and Claude Code. Installs <b>Bun</b>, which the Telegram connection runs on.</td><td class="wrap">Y to install Bun</td></tr>
+      <tr><td class="wrap"><b>2 · Python packages</b></td><td class="wrap">Installs the video downloader, the backup speech-to-text and ffmpeg.</td><td class="wrap">Y</td></tr>
+      <tr><td class="wrap"><b>3 · Telegram</b></td><td class="wrap">Installs the Telegram plugin for Claude Code, saves your bot token, and switches the plugin off for every other Claude session so only the bot uses it.</td><td class="wrap">Y, paste the token (hidden), Y</td></tr>
+      <tr><td class="wrap"><b>4 · Gemini</b></td><td class="wrap">Creates <code>.env</code> and saves your key in it. Git never uploads this file.</td><td class="wrap">Paste the key, or Enter to skip</td></tr>
+      <tr><td class="wrap"><b>5 · Reminders</b></td><td class="wrap">Sets up reminders in Windows Task Scheduler (nothing runs until one is due), and tells your other Claude sessions about the list.</td><td class="wrap">Y, Y (both optional)</td></tr>
+      <tr><td class="wrap"><b>6 · Autostart</b></td><td class="wrap">Starts the bot when you log in, adds a Sunday digest, and registers the command menu you see when you type <b>/</b> in the chat.</td><td class="wrap">Y (optional)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="two" style="margin-top: 2mm;">
+    <div>
+      <h3 class="mt0"><span class="k">6.2</span> When it finishes</h3>
+<pre style="background: #141414; color: #E9E6DF; font-size: 7.6pt;"><span style="color:#8A877F">6. Start with Windows, digest, menu</span>
+  <span style="color:#7BD389">[ok]</span>   starts at login + Sunday digest task
+  <span style="color:#7BD389">[ok]</span>   Telegram '/' menu registered
+----------------------------------------
+Setup complete. Next:
+  1. .\bot start
+  2. Message your bot on Telegram
+  3. /telegram:access pair &lt;code&gt;</pre>
+      <p class="muted">Any <b>[todo]</b> lines are listed at the end with the exact fix. Fix them and run <code>.\setup</code> again: finished steps are skipped.</p>
+    </div>
+    <div>
+      <h3 class="mt0"><span class="k">6.3</span> Why the plugin goes off</h3>
+      <p>Telegram delivers each message to <b>one</b> connection only. If every Claude window on your PC loaded the Telegram plugin, whichever started last would quietly take your messages, and the bot would seem dead.</p>
+      <p>So setup switches it off globally, and the bot switches it back on for itself when it starts. Leave it that way.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== 07 -->
+<section class="chapter" id="ch07">
+  <div class="opener">
+    <div class="num">07<small>First run</small></div>
+    <div>
+      <h2>Start, pair and test</h2>
+      <p class="lead">Start the bot, tell it your Telegram account is the only one it answers, and check it responds.</p>
+    </div>
+  </div>
+  <div class="two">
+    <div>
+      <ol class="steps">
+        <li><span class="no">01</span><div class="bd"><span class="t">Start the bot</span>
+<pre>.\bot start</pre>
+          <p>A window opens with Claude Code in it. <b>That window is the bot</b>: keep it open (minimising is fine). If Claude asks whether you trust the folder, say yes.</p></div></li>
+        <li><span class="no">02</span><div class="bd"><span class="t">Message your bot</span><p>Open your bot in Telegram (the link BotFather gave you) and send <b>hi</b>. It replies with a 6-character pairing code.</p></div></li>
+        <li><span class="no">03</span><div class="bd"><span class="t">Pair, then lock</span><p>Type these <b>in the bot window</b> on the PC:</p>
+<pre><span class="p">&gt;</span> /telegram:access pair a4f91c
+<span class="p">&gt;</span> /telegram:access policy allowlist</pre>
+          <p class="muted">The second line makes strangers get no reply at all.</p></div></li>
+        <li><span class="no">04</span><div class="bd"><span class="t">Test it</span><p>From your phone send <span class="cmd">/menu</span>, then <span class="cmd">/pc</span>. Each should answer within a few seconds.</p></div></li>
+      </ol>
+    </div>
+    <div>
+      <div class="chat">
+        <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
+        <div class="msg out">hi<span class="tm">10:11</span></div>
+        <div class="msg">Pairing required — run in Claude Code:
+
+<code>/telegram:access pair a4f91c</code><span class="tm">10:11</span></div>
+        <div class="msg out"><span class="cmd">/pc</span><span class="tm">10:13</span></div>
+        <div class="msg">🖥 PC ok · bot up 0d 0h 2m
+Disk C: 120 GB free
+Running: 0 watching · 0 building
+Library: 0 reels · 0 builds<span class="tm">10:13</span></div>
+      </div>
+      <div class="figure"><div class="cap"><b>Figure 2.</b> Pairing, then a health check. After pairing, only your account gets answers.</div></div>
+      <div class="note plain"><span class="label">Silent?</span><p>Run <code>.\bot status</code> on the PC. If it shows a problem, <code>.\bot fix</code>. More in chapter 10.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== 08 -->
+<section class="chapter" id="ch08">
+  <div class="opener">
+    <div class="num">08<small>First use</small></div>
+    <div>
+      <h2>Your first reel</h2>
+      <p class="lead">Share a reel, read the breakdown, and try a small build to see the approval flow.</p>
+    </div>
+  </div>
+  <div class="two">
+    <div>
+      <ol class="steps">
+        <li><span class="no">01</span><div class="bd"><span class="t">Share a reel</span><p>In Instagram tap <b>Share → Copy link</b>, paste it to your bot and send. It answers <i>#1 watching it…</i>, and about a minute later sends the breakdown.</p></div></li>
+        <li><span class="no">02</span><div class="bd"><span class="t">Plan it</span><p><span class="cmd">/plan 1</span> researches and sends a written plan. Nothing changes on your PC.</p></div></li>
+        <li><span class="no">03</span><div class="bd"><span class="t">Build it</span><p><span class="cmd">/build 1</span> builds in its own folder next to the project. Before any command, your phone gets the exact command: answer <span class="cmd">/yes 1</span> or <span class="cmd">/no 1</span>.</p></div></li>
+        <li><span class="no">04</span><div class="bd"><span class="t">Keep or throw away</span><p><span class="cmd">/diff 1</span> shows what changed, <span class="cmd">/undo 1</span> removes it, and <span class="cmd">/deploy 1</span> installs it where it belongs, after you confirm.</p></div></li>
+      </ol>
+      <p class="muted">Don't have a reel handy? <span class="cmd">/new a script that prints today's date</span> creates an idea you can plan and build the same way.</p>
+    </div>
+    <div>
+      <div class="chat">
+        <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
+        <div class="msg out">instagram.com/reel/Dd…<span class="tm">10:20</span></div>
+        <div class="msg">#1 watching it…<span class="tm">10:20</span></div>
+        <div class="msg"><b>#1 · A Claude skill that writes release notes</b>
+
+What it shows:
+• A SKILL.md with the prompt shown on screen
+• The repo name, read from the video
+
+To get it here: install a Claude skill.
+
+<span class="cmd">/plan 1</span> · <span class="cmd">/build 1</span> · <span class="cmd">/save 1</span><span class="tm">10:21</span></div>
+        <div class="msg out"><span class="cmd">/build 1 sonnet</span><span class="tm">10:22</span></div>
+        <div class="msg">🔐 #1 build wants to run:
+<code>git init</code>
+
+<span class="cmd">/yes 1</span> · <span class="cmd">/no 1</span> · <span class="cmd">/always 1</span><span class="tm">10:23</span></div>
+        <div class="msg out"><span class="cmd">/yes 1</span><span class="tm">10:23</span></div>
+      </div>
+      <div class="figure"><div class="cap"><b>Figure 3.</b> Watch, then build. Every command waits for your answer.</div></div>
+    </div>
+  </div>
+  <div class="note"><span class="label">Every command</span><p>Type <b>/</b> in the chat for the full menu, or send <span class="cmd">/manual</span> to get the complete manual on your phone.</p></div>
+</section>
+
+<!-- =================================================================== 09 -->
+<section class="chapter" id="ch09">
+  <div class="opener">
+    <div class="num">09<small>Customise</small></div>
+    <div>
+      <h2>Make it yours</h2>
+      <p class="lead">Sensible defaults out of the box. Change them from your phone whenever you like.</p>
+    </div>
+  </div>
+  <div class="two">
+    <div>
+      <h3 class="mt0"><span class="k">9.1</span> Models</h3>
+      <table>
+        <tbody>
+          <tr><td><span class="cmd">/models</span></td><td class="wrap">Shows who does what</td></tr>
+          <tr><td><span class="cmd">/model build opus</span></td><td class="wrap">Tasks: <i>watch</i>, <i>research</i>, <i>plan</i>, <i>build</i></td></tr>
+          <tr><td><span class="cmd">/build 4 haiku</span></td><td class="wrap">Override for one build</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Defaults: watch Sonnet, research Haiku, plan Opus, build Sonnet. Opus and Fable use your Claude plan fastest; <span class="cmd">/quota</span> shows how much is left.</p>
+
+      <h3><span class="k">9.2</span> How careful builds are</h3>
+      <p><b>normal</b> (default) edits files in its own folder freely and asks before every command. <b>safe</b> also asks before every edit: <span class="cmd">/mode safe</span>. There's no mode that runs commands without asking.</p>
+
+      <h3><span class="k">9.3</span> Reminders</h3>
+      <p><span class="cmd">/remind friday 18:00 renew the domain</span>, <span class="cmd">/todo buy milk</span>, <span class="cmd">/reminders</span>. If setup added the section to your global <code>CLAUDE.md</code>, you can also say "remind me…" in any Claude session on the PC.</p>
+    </div>
+    <div>
+      <h3 class="mt0"><span class="k">9.4</span> Keep the PC awake</h3>
+      <p>A sleeping PC means a silent bot. <b>Settings → System → Power → Screen and sleep</b> → "When plugged in, put my device to sleep after" → <b>Never</b>. The screen can still turn off.</p>
+
+      <h3><span class="k">9.5</span> Start with Windows</h3>
+      <p>If you said yes in setup, the bot starts when you log in and restarts itself if it crashes. Change it any time with <code>.\bot autostart on</code> or <code>off</code>.</p>
+
+      <h3><span class="k">9.6</span> Change how it behaves</h3>
+      <p>The bot's instructions are plain English in <code>CLAUDE.md</code>. Edit them (for example the breakdown format, or the default time units), then <code>.\bot restart</code>.</p>
+
+      <h3><span class="k">9.7</span> Build with Codex too</h3>
+<pre>npm install -g @openai/codex
+codex        <span class="c"># sign in once</span></pre>
+      <p class="muted">Then <span class="cmd">/build 4 codex</span>. Codex builds are sandboxed to their folder instead of asking you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== 10 -->
+<section class="chapter" id="ch10">
+  <div class="opener">
+    <div class="num">10<small>Fixes</small></div>
+    <div>
+      <h2>Troubleshooting</h2>
+      <p class="lead">Start with <code>.\bot status</code> in the project folder. It checks the three things that matter most.</p>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th style="width: 46mm;">Symptom</th><th style="width: 50mm;">Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap"><b>"python" / "claude" is not recognized</b></td><td class="wrap">The terminal was open before the install.</td><td class="wrap">Close PowerShell, open a new one, try again.</td></tr>
+      <tr><td class="wrap"><b>winget is not recognized</b></td><td class="wrap">Older Windows without App Installer.</td><td class="wrap">Install <b>App Installer</b> from the Microsoft Store, or install Python, Node.js and Git from their websites.</td></tr>
+      <tr><td class="wrap"><b>"running scripts is disabled"</b></td><td class="wrap">Windows blocks PowerShell scripts by default.</td><td class="wrap">Use <code>.\bot</code> and <code>.\setup</code>, which work regardless. For your own scripts: <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code>.</td></tr>
+      <tr><td class="wrap"><b>Plugin install fails in setup</b></td><td class="wrap">Plugin catalog not loaded yet.</td><td class="wrap">Run <code>claude</code>, type <code>/plugin install telegram@claude-plugins-official</code>, then <code>.\setup</code> again.</td></tr>
+      <tr><td class="wrap"><b>No pairing code arrives</b></td><td class="wrap">Bot not running, or the token is wrong.</td><td class="wrap"><code>.\bot status</code>. If running, re-check the token: <code>.\setup</code> asks again if it's missing.</td></tr>
+      <tr><td class="wrap"><b>Worked once, then silent</b></td><td class="wrap">Another Claude session loaded the Telegram plugin and takes the messages.</td><td class="wrap"><code>.\bot fix</code>. Keep the plugin off globally (chapter 06).</td></tr>
+      <tr><td class="wrap"><b>It answers, then stops mid-task</b></td><td class="wrap">The bot window is waiting for an answer.</td><td class="wrap">Look for a 🔐 Permission message with buttons on your phone, or answer in the bot window.</td></tr>
+      <tr><td class="wrap"><b>"I couldn't grab that one"</b></td><td class="wrap">The platform blocked the free download.</td><td class="wrap">Save the video on your phone and send the file itself. <code>.\bot update</code> often helps too.</td></tr>
+      <tr><td class="wrap"><b>"Used the backup watcher"</b></td><td class="wrap">Gemini's free quota is used up for today.</td><td class="wrap">Wait for midnight Pacific, or enable billing on the key.</td></tr>
+      <tr><td class="wrap"><b>First reel very slow</b></td><td class="wrap">No Gemini key: the speech model downloads once.</td><td class="wrap">Let it finish (about 500 MB). Later reels are faster.</td></tr>
+      <tr><td class="wrap"><b>Reminder didn't arrive</b></td><td class="wrap">PC asleep or off at that time.</td><td class="wrap">It's sent when the PC wakes. Keep the PC awake (chapter 09).</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =================================================================== 11 -->
+<section class="chapter" id="ch11">
+  <div class="opener">
+    <div class="num">11<small>Upkeep</small></div>
+    <div>
+      <h2>Update and uninstall</h2>
+      <p class="lead">Updating takes a minute. Removing it cleanly takes five steps.</p>
+    </div>
+  </div>
+  <div class="two">
+    <div>
+      <h3 class="mt0"><span class="k">11.1</span> Update</h3>
+<pre><span class="c"># in the project folder</span>
+git pull          <span class="c"># new bot version</span>
+.\bot update      <span class="c"># tools</span>
+.\bot restart</pre>
+      <p class="muted">Your key, token, reels and reminders are never touched by an update. Run <code>.\setup --check</code> afterwards if the release notes mention new steps.</p>
+
+      <h3><span class="k">11.2</span> At the PC</h3>
+      <table>
+        <tbody>
+          <tr><td><code>.\bot status</code></td><td class="wrap">Running? Connected? Building?</td></tr>
+          <tr><td><code>.\bot start</code> · <code>stop</code></td><td class="wrap">Open or close the bot</td></tr>
+          <tr><td><code>.\bot restart</code></td><td class="wrap">After changing anything</td></tr>
+          <tr><td><code>.\bot fix</code></td><td class="wrap">Remove extra connections</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 class="mt0"><span class="k">11.3</span> Uninstall</h3>
+      <ol class="steps">
+        <li><span class="no">01</span><div class="bd"><span class="t">Stop it</span><pre>.\bot stop
+.\bot autostart off</pre></div></li>
+        <li><span class="no">02</span><div class="bd"><span class="t">Remove reminders</span><pre>python reminders\remind.py uninstall</pre><p class="muted">Also delete the "Reminders and to-dos" section from <code>~\.claude\CLAUDE.md</code> if setup added it.</p></div></li>
+        <li><span class="no">03</span><div class="bd"><span class="t">Remove the plugin</span><pre>claude plugin uninstall telegram@claude-plugins-official</pre></div></li>
+        <li><span class="no">04</span><div class="bd"><span class="t">Delete the bot</span><p>Send <span class="cmd">/deletebot</span> to BotFather, and delete the Gemini key in AI Studio.</p></div></li>
+        <li><span class="no">05</span><div class="bd"><span class="t">Delete the folders</span><p>The project folder, and <code>builds</code> next to it if you want your builds gone too.</p></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== QUICK REFERENCE -->
+<section class="qr-page" id="qr">
+  <h2>Quick reference<span>.</span></h2>
+  <p class="intro">Setup once, then everything happens from your phone. N is a reel number.</p>
+  <div class="qr">
+    <section>
+      <h5>Setup, once</h5>
+      <dl>
+        <dt>git clone &lt;url&gt;</dt><dd>Download the project</dd>
+        <dt>.\setup</dt><dd>Checks and installs everything</dd>
+        <dt>.\bot start</dt><dd>Opens the bot window</dd>
+        <dt>pair &lt;code&gt;</dt><dd>In the bot window: /telegram:access pair</dd>
+        <dt>policy allowlist</dt><dd>Then only you can use it</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>At the PC</h5>
+      <dl>
+        <dt>.\bot status</dt><dd>Running? Connected? Building?</dd>
+        <dt>.\bot start · stop</dt><dd>Open or close the bot</dd>
+        <dt>.\bot restart</dt><dd>After changing anything</dd>
+        <dt>.\bot fix</dt><dd>Bot went silent</dd>
+        <dt>.\bot update</dt><dd>Downloader + Claude Code</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>Reels</h5>
+      <dl>
+        <dt>a link / video</dt><dd>Breakdown in about a minute</dd>
+        <dt>/find words</dt><dd>Search your reels</dd>
+        <dt>/r N</dt><dd>Resend a breakdown</dd>
+        <dt>/save N</dt><dd>Keep it for later</dd>
+        <dt>/new idea</dt><dd>Build without a reel</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>Build</h5>
+      <dl>
+        <dt>/plan N [model]</dt><dd>A plan, changes nothing</dd>
+        <dt>/build N [model]</dt><dd>Build it on the PC</dd>
+        <dt>/yes N · /no N</dt><dd>Answer its request</dd>
+        <dt>/tell N msg</dt><dd>Steer or answer it</dd>
+        <dt>/undo N</dt><dd>Throw a build away</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>Remind</h5>
+      <dl>
+        <dt>/remind when what</dt><dd>Pings your phone then</dd>
+        <dt>/todo what</dt><dd>A to-do, no ping</dd>
+        <dt>/reminders</dt><dd>What's open</dd>
+        <dt>/done R3</dt><dd>Mark it done</dd>
+        <dt>/snooze R3 1h</dt><dd>Push it back</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>Status and settings</h5>
+      <dl>
+        <dt>/menu · /manual</dt><dd>All commands</dd>
+        <dt>/pending</dt><dd>Everything waiting on you</dd>
+        <dt>/quota</dt><dd>Gemini + Claude left</dd>
+        <dt>/model build opus</dt><dd>Change a default model</dd>
+        <dt>/mode safe</dt><dd>Ask before every edit</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>If something's wrong</h5>
+      <dl>
+        <dt>bot silent</dt><dd>.\bot status, then .\bot fix</dd>
+        <dt>no pairing code</dt><dd>Is the bot running? Right token?</dd>
+        <dt>download failed</dt><dd>Send the video file itself</dd>
+        <dt>scripts disabled</dt><dd>Use .\bot and .\setup</dd>
+      </dl>
+    </section>
+    <section>
+      <h5>Where things are</h5>
+      <dl>
+        <dt>.env</dt><dd>Your Gemini key (never committed)</dd>
+        <dt>CLAUDE.md</dt><dd>How the bot behaves</dd>
+        <dt>MANUAL.md</dt><dd>Every command</dd>
+        <dt>..\builds\</dt><dd>What the bot built</dd>
+      </dl>
+    </section>
+  </div>
+  <div class="foot"><span>Models: haiku · sonnet · opus · fable · codex</span><span>Silent bot → .\bot status, then .\bot fix</span></div>
+</section>

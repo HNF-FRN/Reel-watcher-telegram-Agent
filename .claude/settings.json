@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python .claude/skills/reel-watch/scripts/reel.py:*)",
+      "PowerShell(python .claude/skills/reel-watch/scripts/reel.py:*)",
+      "Bash(python .claude/skills/reel-watch/scripts/jobs.py:*)",
+      "PowerShell(python .claude/skills/reel-watch/scripts/jobs.py:*)",
+      "Bash(python .claude/skills/reel-watch/scripts/build.py:*)",
+      "PowerShell(python .claude/skills/reel-watch/scripts/build.py:*)",
+      "Bash(python reminders/remind.py:*)",
+      "PowerShell(python reminders/remind.py:*)",
+      "Bash(python .claude/skills/reel-watch/scripts/maintain.py digest:*)",
+      "PowerShell(python .claude/skills/reel-watch/scripts/maintain.py digest:*)",
+      "Read(./reels/**)",
+      "Write(./reels/**)",
+      "Edit(./reels/**)",
+      "Read(./MANUAL.md)",
+      "Read(~/.claude/channels/telegram/inbox/**)",
+      "Read(../builds/**)",
+      "mcp__plugin_telegram_telegram__reply",
+      "mcp__plugin_telegram_telegram__react",
+      "mcp__plugin_telegram_telegram__edit_message",
+      "mcp__plugin_telegram_telegram__download_attachment"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(~/.claude/channels/telegram/.env)"
+    ]
+  }
+}

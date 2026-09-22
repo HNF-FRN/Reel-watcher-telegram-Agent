@@ -1,0 +1,4 @@
+# Reel downloads, local speech-to-text (backup watcher) and a bundled ffmpeg
+yt-dlp
+faster-whisper
+imageio-ffmpeg
