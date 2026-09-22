@@ -113,8 +113,17 @@ def telegram():
         todo(f"install the plugin: claude plugin install {PLUGIN}")
 
     env = TG_DIR / ".env"
-    has_token = env.exists() and "TELEGRAM_BOT_TOKEN=" in env.read_text(encoding="utf-8")
-    if has_token:
+    raw = env.read_bytes() if env.exists() else b""
+    has_token = b"TELEGRAM_BOT_TOKEN=" in raw
+    # The plugin reads this file with /^(\w+)=(.*)$/ per "\n"-split line: a Windows "\r\n" or a BOM makes it
+    # see no token, so it exits at startup and the bot never answers (no pairing code). Always LF, no BOM.
+    if has_token and (b"\r" in raw or raw.startswith(b"\xef\xbb\xbf")):
+        if CHECK:
+            todo("bot token file has Windows line endings: the plugin can't read it. Run setup (it fixes this)")
+        else:
+            env.write_bytes(raw.removeprefix(b"\xef\xbb\xbf").replace(b"\r", b""))
+            ok("bot token saved (fixed Windows line endings the plugin can't read)")
+    elif has_token:
         ok("bot token saved")
     elif not CHECK:
         say("    Paste the token BotFather gave you (it looks like 123456789:AAH...).")
@@ -122,7 +131,7 @@ def telegram():
         token = getpass.getpass("    token (hidden): ").strip()
         if re.fullmatch(r"\d{6,}:[A-Za-z0-9_-]{20,}", token):
             TG_DIR.mkdir(parents=True, exist_ok=True)
-            env.write_text(f"TELEGRAM_BOT_TOKEN={token}\n", encoding="utf-8")
+            env.write_text(f"TELEGRAM_BOT_TOKEN={token}\n", encoding="utf-8", newline="\n")  # LF: see above
             ok("bot token saved")
         else:
             todo("no valid token entered: run setup again, or /telegram:configure <token> in Claude Code")
