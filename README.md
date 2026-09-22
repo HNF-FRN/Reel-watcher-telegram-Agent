@@ -8,6 +8,7 @@
   <img alt="Built on Claude Code" src="https://img.shields.io/badge/Built%20on-Claude%20Code-FF5A1F?style=flat-square">
   <img alt="Telegram bot" src="https://img.shields.io/badge/Interface-Telegram-141414?style=flat-square">
   <img alt="Gemini video" src="https://img.shields.io/badge/Watches%20with-Gemini-141414?style=flat-square">
+  <img alt="MIT license" src="https://img.shields.io/badge/License-MIT-141414?style=flat-square">
 </p>
 
 <p align="center">
@@ -217,3 +218,7 @@ git pull
 ```
 
 Your key, token, reels and reminders are never touched by an update.
+
+## License
+
+[MIT](LICENSE). Free to use, change and share. Reel Agent is an independent project and is not affiliated with Anthropic, Google or Telegram.
