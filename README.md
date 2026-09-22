@@ -203,6 +203,7 @@ Your own data (`.env`, `reels/`, reminder lists) is created on first use and ign
 | Symptom | Fix |
 |---|---|
 | Bot doesn't answer | `.\bot status`. If it says **PROBLEM**, run `.\bot fix`. Another Claude session had the Telegram plugin on. |
+| First message gets no pairing code | `.\bot status` says **not connected** while the bot runs. Usually the token file had Windows line endings; `.\bot restart` fixes it. Full walkthrough: [docs/fix-no-pairing-code.md](docs/fix-no-pairing-code.md). |
 | "running scripts is disabled" | Use `.\bot` and `.\setup`: they work regardless of the execution policy. |
 | "I couldn't grab that one" | Save the video on your phone and send the file itself. `.\bot update` often helps too. |
 | Breakdowns say "used the backup watcher" | Gemini's free quota is used up for today; `/quota` shows when it resets. |
