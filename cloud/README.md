@@ -42,7 +42,8 @@ npx wrangler deploy
 ```
 
 Generate `TELEGRAM_WEBHOOK_SECRET` and `BACKEND_TOKEN` as separate random
-values of at least 32 characters. `TELEGRAM_OWNER_ID` is your numeric Telegram
+values of at least 32 characters. Use only letters, digits, `_`, and `-` for
+the Telegram webhook secret. `TELEGRAM_OWNER_ID` is your numeric Telegram
 user ID, not the bot ID. Store the Worker URL shown by Wrangler.
 
 ## 2. Create the Claude cloud routine
