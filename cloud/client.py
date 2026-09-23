@@ -12,15 +12,21 @@ BASE = os.environ.get("REEL_CLOUD_URL", "").rstrip("/")
 TOKEN = os.environ.get("REEL_CLOUD_BACKEND_TOKEN", "")
 
 
+def auth_headers():
+    # Claude cloud's API credential proxy adds Authorization for this host.
+    # A local token remains useful for running the bridge outside cloud sessions.
+    return {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
+
+
 def call(method, path, body=None):
-    if not BASE.startswith("https://") or not TOKEN:
-        raise RuntimeError("Set REEL_CLOUD_URL and REEL_CLOUD_BACKEND_TOKEN in the routine environment")
+    if not BASE.startswith("https://"):
+        raise RuntimeError("Set REEL_CLOUD_URL in the routine environment")
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(
         BASE + path,
         data=data,
         method=method,
-        headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+        headers={**auth_headers(), "Content-Type": "application/json"},
     )
     with urllib.request.urlopen(request, timeout=90) as response:
         content = response.read()
@@ -96,7 +102,7 @@ def main():
         dest.parent.mkdir(parents=True, exist_ok=True)
         query = urllib.parse.urlencode({"file_id": file_id})
         request = urllib.request.Request(BASE + "/backend/file?" + query,
-                                         headers={"Authorization": f"Bearer {TOKEN}"})
+                                         headers=auth_headers())
         with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as output:
             while chunk := response.read(1024 * 1024):
                 output.write(chunk)

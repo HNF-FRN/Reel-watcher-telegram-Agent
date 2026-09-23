@@ -15,14 +15,14 @@ def main(run_id):
     if "url" in source:
         target = source["url"]
     elif "file_id" in source:
-        from client import BASE, TOKEN
+        from client import BASE, auth_headers
         import urllib.parse
         import urllib.request
         target = str(Path("reels") / f"telegram-{run['job_id']}.bin")
         Path(target).parent.mkdir(parents=True, exist_ok=True)
         query = urllib.parse.urlencode({"file_id": source["file_id"]})
         request = urllib.request.Request(BASE + "/backend/file?" + query,
-                                         headers={"Authorization": f"Bearer {TOKEN}"})
+                                         headers=auth_headers())
         with urllib.request.urlopen(request, timeout=120) as response, open(target, "wb") as output:
             while chunk := response.read(1024 * 1024):
                 output.write(chunk)
