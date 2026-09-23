@@ -11,7 +11,6 @@ Files in <build>/.reel/: state.json, log.md, events.jsonl, inbox/ (tell messages
 import json
 import queue
 import re
-import shutil
 import subprocess
 import sys
 import threading
@@ -19,7 +18,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import claude_usage_record, clean_env, load_config, now, read_json, tg_send, utf8_stdio, write_json  # noqa: E402
+from common import claude_usage_record, clean_env, find_exe, load_config, now, read_json, tg_send, utf8_stdio, write_json  # noqa: E402
 
 NO_WINDOW = 0x08000000
 READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "LS", "WebSearch", "WebFetch", "TodoWrite", "TodoRead", "Task", "Agent",
@@ -97,7 +96,7 @@ class Runner:
 
     # ------------------------------------------------------------ process
     def claude_cmd(self):
-        exe = shutil.which("claude") or "claude"
+        exe = find_exe("claude")
         mode = self.state.get("mode", "normal")
         plan = self.state.get("kind") == "plan"
         cmd = [exe, "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
@@ -334,7 +333,7 @@ class Runner:
         self.proc.wait(timeout=60)
 
     def run_codex(self):
-        exe = shutil.which("codex") or "codex"
+        exe = find_exe("codex")
         plan = self.state.get("kind") == "plan"
         last = self.meta / "codex_last.txt"
         prompt = (PLAN_RULES if plan else BUILD_RULES) + "\n\n" + self.message

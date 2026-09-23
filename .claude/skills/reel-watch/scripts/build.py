@@ -31,7 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import (BUILD_MODELS, BUILDS, CLAUDE_USAGE, MODES, REELS, SCRIPTS, TASKS, claude_usage_record, clean_env,  # noqa: E402
-                    gemini_usage, load_config, now, pid_alive, read_json, save_config,
+                    find_exe, gemini_usage, load_config, now, pid_alive, read_json, save_config,
                     seconds_to_pacific_midnight, utf8_stdio, write_json)
 
 JOBS = REELS / "jobs.json"
@@ -407,7 +407,7 @@ def cmd_quota(a):
 
 
 def refresh_claude_usage():
-    exe = shutil.which("claude") or "claude"
+    exe = find_exe("claude")
     cmd = [exe, "-p", "--output-format", "stream-json", "--verbose", "--model", "haiku",
            "--settings", json.dumps({"enabledPlugins": {"telegram@claude-plugins-official": False}}),
            "--strict-mcp-config", "--mcp-config", json.dumps({"mcpServers": {}}), "Reply with just: ok"]
