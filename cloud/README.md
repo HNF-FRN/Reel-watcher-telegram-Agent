@@ -100,7 +100,7 @@ poller. Telegram updates arriving while neither consumer is active may expire.
   Telegram when a link cannot be fetched.
 - The cloud job list is in D1. It does not automatically import `reels/jobs.json`
   from the Windows PC, so old local job numbers are not available in cloud mode.
-- `/tell`, `/always`, advanced local build settings, Windows reminder tasks,
+- `/tell`, `/always`, full `/diff` and `/log` attachments, advanced local build settings, Windows reminder tasks,
   and arbitrary PC deployment are not implemented in cloud mode. The basic
   send/watch, `/new`, `/plan`, `/build`, `/yes`, `/no`, `/jobs`, `/r`, `/stop`,
   `/resume`, and reminders flow is implemented. `/stop` is cooperative.
