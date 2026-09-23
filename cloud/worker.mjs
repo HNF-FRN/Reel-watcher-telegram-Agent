@@ -113,7 +113,7 @@ async function handleTelegram(request, env, ctx) {
       await reply(env, chat, [rows.results.map(x => `#${x.job_id || '?'} ${x.action}: ${x.status}`).join('\n'), pending.results.map(x => `🔐 #${x.job_id} ${x.command.slice(0, 140)}`).join('\n')].filter(Boolean).join('\n') || 'Nothing running or waiting.');
     } else if (cmd === 'yes' || cmd === 'no') {
       const n = safeInt(arg.split(/\s+/)[0]);
-      const pending = await env.DB.prepare("SELECT a.id FROM approvals a JOIN runs r ON a.run_id=r.id WHERE r.job_id=? AND a.decision='pending' ORDER BY a.created_at LIMIT 1").bind(n).first();
+      const pending = await env.DB.prepare("SELECT a.id FROM approvals a JOIN runs r ON a.run_id=r.id WHERE r.job_id=? AND r.status='started' AND a.decision='pending' ORDER BY a.created_at LIMIT 1").bind(n).first();
       if (!pending) await reply(env, chat, `Nothing waiting for #${n}.`);
       else {
         await env.DB.prepare("UPDATE approvals SET decision=?,decided_at=? WHERE id=? AND decision='pending'")
@@ -145,6 +145,8 @@ async function handleTelegram(request, env, ctx) {
     } else if (cmd === 'stop') {
       const n = safeInt(arg.split(/\s+/)[0]);
       await env.DB.prepare("UPDATE runs SET status='stop-requested',updated_at=? WHERE job_id=? AND status IN ('queued','started')")
+        .bind(now(), n).run();
+      await env.DB.prepare("UPDATE approvals SET decision='no',decided_at=? WHERE decision='pending' AND run_id IN (SELECT id FROM runs WHERE job_id=? AND status='stop-requested')")
         .bind(now(), n).run();
       await reply(env, chat, `Stop requested for #${n}. The cloud session will stop at its next check.`);
     } else if (cmd === 'undo' || cmd === 'deploy') {
@@ -217,6 +219,8 @@ async function handleBackend(request, env, path) {
     if (!['done', 'failed', 'stop-requested'].includes(status)) return text('bad status', 400);
     await env.DB.prepare('UPDATE runs SET status=?,error=?,updated_at=? WHERE id=?')
       .bind(status, String(error || '').slice(0, 1000), now(), value.id).run();
+    if (status !== 'stop-requested') await env.DB.prepare("UPDATE approvals SET decision='no',decided_at=? WHERE run_id=? AND decision='pending'")
+      .bind(now(), value.id).run();
     return json({ ok: true });
   }
   if (parts[1] === 'job' && parts[2] && request.method === 'PATCH') {
