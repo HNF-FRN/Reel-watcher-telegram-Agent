@@ -49,7 +49,7 @@ async function dispatchRun(env, id) {
     });
     if (!response.ok) throw new Error(`Claude routine failed: ${response.status}`);
     const payload = await response.json();
-    await env.DB.prepare("UPDATE runs SET status='started',session_id=COALESCE(?,session_id),session_url=?,updated_at=? WHERE id=? AND status='dispatching'")
+    await env.DB.prepare("UPDATE runs SET status=CASE WHEN status='dispatching' THEN 'starting' ELSE status END,session_id=COALESCE(session_id,?),session_url=?,updated_at=? WHERE id=? AND status IN ('dispatching','started')")
       .bind(payload.claude_code_session_id || null, payload.claude_code_session_url || '', now(), id).run();
     if (jobId) await env.DB.prepare('UPDATE jobs SET status=?,updated_at=? WHERE id=?')
       .bind(action === 'watch' ? 'watching' : action === 'plan' ? 'planning' : 'building', now(), jobId).run();
@@ -108,7 +108,7 @@ async function handleTelegram(request, env, ctx) {
         await reply(env, chat, `${action === 'plan' ? '📋 Planning' : action === 'watch' ? '🎬 Watching' : '🛠 Building'} #${n} in the cloud…`);
       }
     } else if (cmd === 'pending' || cmd === 'tasks') {
-      const rows = await env.DB.prepare("SELECT r.id,r.job_id,r.action,r.status FROM runs r WHERE r.status IN ('queued','started') ORDER BY created_at DESC LIMIT 15").all();
+      const rows = await env.DB.prepare("SELECT r.id,r.job_id,r.action,r.status FROM runs r WHERE r.status IN ('queued','starting','started') ORDER BY created_at DESC LIMIT 15").all();
       const pending = await env.DB.prepare("SELECT a.id,r.job_id,a.command FROM approvals a JOIN runs r ON a.run_id=r.id WHERE a.decision='pending' ORDER BY a.created_at LIMIT 10").all();
       await reply(env, chat, [rows.results.map(x => `#${x.job_id || '?'} ${x.action}: ${x.status}`).join('\n'), pending.results.map(x => `🔐 #${x.job_id} ${x.command.slice(0, 140)}`).join('\n')].filter(Boolean).join('\n') || 'Nothing running or waiting.');
     } else if (cmd === 'yes' || cmd === 'no') {
@@ -144,7 +144,7 @@ async function handleTelegram(request, env, ctx) {
       }
     } else if (cmd === 'stop') {
       const n = safeInt(arg.split(/\s+/)[0]);
-      await env.DB.prepare("UPDATE runs SET status='stop-requested',updated_at=? WHERE job_id=? AND status IN ('queued','started')")
+      await env.DB.prepare("UPDATE runs SET status='stop-requested',updated_at=? WHERE job_id=? AND status IN ('queued','starting','started')")
         .bind(now(), n).run();
       await env.DB.prepare("UPDATE approvals SET decision='no',decided_at=? WHERE decision='pending' AND run_id IN (SELECT id FROM runs WHERE job_id=? AND status='stop-requested')")
         .bind(now(), n).run();
@@ -207,9 +207,12 @@ async function handleBackend(request, env, path) {
   }
   if (parts[1] === 'session' && request.method === 'POST') {
     const { run_id, session_id } = await request.json();
-    if (!session_id || !await run(env, run_id)) return text('bad session', 400);
-    await env.DB.prepare("UPDATE runs SET session_id=?,status='started',updated_at=? WHERE id=?")
+    const current = await run(env, run_id);
+    if (!session_id || !current) return text('bad session', 400);
+    if (current.status === 'started' && current.session_id === session_id) return json({ ok: true });
+    const registered = await env.DB.prepare("UPDATE runs SET session_id=?,status='started',updated_at=? WHERE id=? AND status IN ('dispatching','starting')")
       .bind(session_id, now(), run_id).run();
+    if (!registered.meta.changes) return text('run is no longer accepting registration', 409);
     return json({ ok: true });
   }
   if (parts[1] === 'run' && parts[2] && request.method === 'PATCH') {
@@ -283,6 +286,20 @@ export default {
   async scheduled(_event, env) {
     const queued = await env.DB.prepare("SELECT id FROM runs WHERE status='queued' ORDER BY created_at LIMIT 20").all();
     for (const item of queued.results) await dispatchRun(env, item.id);
+    const cutoff = new Date(Date.now() - 10 * 60_000).toISOString();
+    const unregistered = await env.DB.prepare("SELECT id,job_id,chat_id,session_url FROM runs WHERE status='starting' AND updated_at<? ORDER BY updated_at LIMIT 20")
+      .bind(cutoff).all();
+    for (const item of unregistered.results) {
+      const expired = await env.DB.prepare("UPDATE runs SET status='failed',error='Claude session did not register with the Worker within 10 minutes',updated_at=? WHERE id=? AND status='starting'")
+        .bind(now(), item.id).run();
+      if (!expired.meta.changes) continue;
+      if (item.job_id) {
+        const latest = await env.DB.prepare('SELECT id FROM runs WHERE job_id=? ORDER BY rowid DESC LIMIT 1').bind(item.job_id).first();
+        if (latest?.id === item.id) await env.DB.prepare("UPDATE jobs SET status='failed',updated_at=? WHERE id=?")
+          .bind(now(), item.job_id).run();
+      }
+      await reply(env, item.chat_id, `❌ Cloud task ${item.job_id ? `#${item.job_id} ` : ''}did not connect within 10 minutes. Check ${item.session_url || 'the Claude routine'} and retry.`);
+    }
     const rows = await env.DB.prepare("SELECT id,chat_id,text FROM reminders WHERE status='open' AND due_at<=? ORDER BY due_at LIMIT 20")
       .bind(now()).all();
     for (const item of rows.results) {
