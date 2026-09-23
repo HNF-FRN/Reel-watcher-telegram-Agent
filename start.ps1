@@ -23,6 +23,19 @@ $env:Path = "$env:APPDATA\npm\node_modules\bun\bin;$env:USERPROFILE\.local\bin;$
 $maint = Join-Path $PSScriptRoot ".claude\skills\reel-watch\scripts\maintain.py"
 $claude = (Get-Command claude.exe -ErrorAction SilentlyContinue).Source
 if (-not $claude) { $claude = Join-Path $env:USERPROFILE '.local\bin\claude.exe' }
+# The plugin can't read its token file if it has Windows line endings (CRLF) or a BOM, e.g. after editing it in
+# Notepad: it exits at startup and the bot never answers, not even with a pairing code. Rewrite it as plain LF.
+$tokenFile = "$HOME\.claude\channels\telegram\.env"
+if (Test-Path $tokenFile) {
+    $raw = [IO.File]::ReadAllBytes($tokenFile)
+    if ($raw -contains 13 -or ($raw.Length -ge 3 -and $raw[0] -eq 0xEF -and $raw[1] -eq 0xBB -and $raw[2] -eq 0xBF)) {
+        $text = [Text.Encoding]::UTF8.GetString($raw).TrimStart([char]0xFEFF) -replace "`r", ''
+        [IO.File]::WriteAllText($tokenFile, $text)  # .NET default: UTF-8 without BOM
+        Write-Host 'Fixed the Telegram token file (Windows line endings the plugin cannot read).' -ForegroundColor Yellow
+    }
+} else {
+    Write-Host 'No Telegram bot token saved yet: run .\setup first. The bot cannot connect without it.' -ForegroundColor Red
+}
 
 $quickFails = 0
 $alerted = $false

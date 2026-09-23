@@ -53,6 +53,7 @@ function Invoke-Status {
         Write-Host 'Telegram: connected (one connection, owned by the bot)' -ForegroundColor Green
     } elseif ($pollers.Count -eq 0) {
         Write-Host 'Telegram: not connected' -ForegroundColor Yellow
+        if ($bot.Count -gt 0) { Write-Host '  The bot runs but its Telegram plugin did not start. Run .\bot restart; if it stays, see docs\fix-no-pairing-code.md' }
     } else {
         Write-Host ("Telegram: PROBLEM - {0} connections, {1} owned by the bot. Messages may vanish. Run: .\bot fix" -f $pollers.Count, $mine.Count) -ForegroundColor Red
     }
