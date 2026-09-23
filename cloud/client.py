@@ -1,0 +1,120 @@
+"""Small authenticated bridge from a Claude cloud routine to the Telegram Worker."""
+import argparse
+import json
+import os
+import sys
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+
+BASE = os.environ.get("REEL_CLOUD_URL", "").rstrip("/")
+TOKEN = os.environ.get("REEL_CLOUD_BACKEND_TOKEN", "")
+
+
+def call(method, path, body=None):
+    if not BASE.startswith("https://") or not TOKEN:
+        raise RuntimeError("Set REEL_CLOUD_URL and REEL_CLOUD_BACKEND_TOKEN in the routine environment")
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(
+        BASE + path,
+        data=data,
+        method=method,
+        headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=90) as response:
+        content = response.read()
+        return json.loads(content) if content else {}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+    start = sub.add_parser("start")
+    start.add_argument("run_id")
+    get = sub.add_parser("get")
+    get.add_argument("run_id")
+    send = sub.add_parser("send")
+    send.add_argument("run_id")
+    send.add_argument("message")
+    finish = sub.add_parser("finish")
+    finish.add_argument("run_id")
+    finish.add_argument("--status", choices=["done", "failed"], default="done")
+    finish.add_argument("--summary", required=True)
+    finish.add_argument("--breakdown")
+    finish.add_argument("--plan")
+    finish.add_argument("--branch-url")
+    fetch = sub.add_parser("fetch-file")
+    fetch.add_argument("run_id")
+    fetch.add_argument("destination")
+    reminder = sub.add_parser("remind")
+    reminder.add_argument("run_id")
+    reminder.add_argument("due_at")
+    reminder.add_argument("message")
+    args = parser.parse_args()
+
+    if args.command == "start":
+        session_id = os.environ.get("CLAUDE_CODE_REMOTE_SESSION_ID")
+        if not session_id:
+            raise RuntimeError("This command is for a Claude cloud routine")
+        call("POST", "/backend/session", {"run_id": args.run_id, "session_id": session_id})
+        item = call("GET", f"/backend/run/{args.run_id}")
+        item["job"] = call("GET", f"/backend/job/{item['job_id']}") if item.get("job_id") else None
+        print(json.dumps(item, ensure_ascii=False))
+    elif args.command == "get":
+        item = call("GET", f"/backend/run/{args.run_id}")
+        item["job"] = call("GET", f"/backend/job/{item['job_id']}") if item.get("job_id") else None
+        print(json.dumps(item, ensure_ascii=False))
+    elif args.command == "send":
+        item = call("GET", f"/backend/run/{args.run_id}")
+        call("POST", "/backend/message", {"chat_id": item["chat_id"], "text": args.message})
+    elif args.command == "finish":
+        item = call("GET", f"/backend/run/{args.run_id}")
+        if item.get("job_id"):
+            patch = {"status": "done" if args.status == "done" else "failed", "summary": args.summary}
+            if args.breakdown:
+                patch["breakdown"] = Path(args.breakdown).read_text(encoding="utf-8")
+            if args.plan:
+                patch["plan"] = Path(args.plan).read_text(encoding="utf-8")
+            if args.branch_url:
+                patch["branch_url"] = args.branch_url
+            call("PATCH", f"/backend/job/{item['job_id']}", patch)
+        call("PATCH", f"/backend/run/{args.run_id}", {"status": args.status})
+        prefix = f"#{item['job_id']} " if item.get("job_id") else ""
+        call("POST", "/backend/message", {
+            "chat_id": item["chat_id"],
+            "text": f"{'✅' if args.status == 'done' else '❌'} {prefix}{args.summary}" +
+                    (f"\n{args.branch_url}" if args.branch_url else ""),
+        })
+    elif args.command == "fetch-file":
+        item = call("GET", f"/backend/run/{args.run_id}")
+        source = json.loads(call("GET", f"/backend/job/{item['job_id']}")["source"])
+        file_id = source.get("file_id")
+        if not file_id:
+            raise RuntimeError("This job has no Telegram attachment")
+        dest = Path(args.destination).resolve()
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        query = urllib.parse.urlencode({"file_id": file_id})
+        request = urllib.request.Request(BASE + "/backend/file?" + query,
+                                         headers={"Authorization": f"Bearer {TOKEN}"})
+        with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as output:
+            while chunk := response.read(1024 * 1024):
+                output.write(chunk)
+        print(str(dest))
+    elif args.command == "remind":
+        item = call("GET", f"/backend/run/{args.run_id}")
+        if item["action"] != "remind":
+            raise RuntimeError("This run is not a reminder")
+        result = call("POST", "/backend/reminder", {
+            "chat_id": item["chat_id"], "due_at": args.due_at, "text": args.message,
+        })
+        print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(f"cloud bridge failed: {exc}", file=sys.stderr)
+        sys.exit(1)
+
