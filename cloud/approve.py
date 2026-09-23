@@ -78,7 +78,10 @@ def main():
         deadline = time.monotonic() + 1500  # 25 min; configured hook timeout is 26 min.
         while decision == "pending" and time.monotonic() < deadline:
             time.sleep(3)
-            decision = call("GET", f"/backend/approval/{pending['id']}")["decision"]
+            state = call("GET", f"/backend/approval/{pending['id']}")
+            if state.get("status") == "stop-requested":
+                deny("The user requested a stop.")
+            decision = state["decision"]
         if decision == "yes":
             allow()
             return
