@@ -22,6 +22,10 @@ def main():
         body = json.load(response)
     if not body.get("ok"):
         raise RuntimeError(body.get("description", "Telegram rejected the webhook"))
+    with urllib.request.urlopen(f"https://api.telegram.org/bot{bot}/getWebhookInfo", timeout=30) as response:
+        info = json.load(response)
+    if not info.get("ok") or info.get("result", {}).get("url") != worker + "/telegram":
+        raise RuntimeError("Telegram did not report the expected webhook URL")
     print("Telegram webhook registered at", worker + "/telegram")
 
 
