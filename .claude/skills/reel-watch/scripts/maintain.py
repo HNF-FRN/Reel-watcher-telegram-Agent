@@ -7,6 +7,7 @@ Usage:
                                             frames, images and manifests)
     python maintain.py digest [--send]      weekly summary of saved / unanswered reels and builds; --send posts it
     python maintain.py menu                 register the "/" command menu with Telegram (run once; safe to repeat)
+    python maintain.py alert "text"         send a plain message to the user (start.ps1 uses it when the bot can't start)
 
 Telegram messages go to the chat IDs in ~/.claude/channels/telegram/access.json (allowFrom): the user's own DM.
 """
@@ -129,6 +130,7 @@ def main():
     sub.add_parser("menu")
     p = sub.add_parser("cleanup"); p.add_argument("--days", type=int, default=30)
     p = sub.add_parser("digest"); p.add_argument("--send", action="store_true")
+    p = sub.add_parser("alert"); p.add_argument("text")
     a = ap.parse_args()
     if a.cmd == "startup":
         startup()
@@ -137,6 +139,8 @@ def main():
     elif a.cmd == "menu":
         r = tg_api("setMyCommands", {"commands": [{"command": c, "description": d[:256]} for c, d in MENU]})
         print(f"menu registered: {r.get('ok')} ({len(MENU)} commands)")
+    elif a.cmd == "alert":
+        print("sent" if tg_send(a.text) else "send failed")
     elif a.cmd == "digest":
         text = build_digest()
         print(text)

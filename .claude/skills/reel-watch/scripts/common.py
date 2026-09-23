@@ -2,6 +2,7 @@
 import ctypes
 import json
 import os
+import shutil
 import sys
 import time
 import urllib.parse
@@ -114,6 +115,20 @@ SESSION_VARS = ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_SESSION_
 
 def clean_env():
     return {k: v for k, v in os.environ.items() if k.upper() not in SESSION_VARS}
+
+
+def find_exe(name):
+    """Full path to claude / codex / bun. PATH first, then their usual install folders: Windows can start
+    programs at login with a cut-off PATH that leaves these out, and a bare name would then fail."""
+    found = shutil.which(name)
+    if found:
+        return found
+    home, appdata = Path.home(), Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+    for d in (home / ".local" / "bin", appdata / "npm", appdata / "npm" / "node_modules" / "bun" / "bin"):
+        for ext in (".exe", ".cmd", ""):
+            if (d / (name + ext)).is_file():
+                return str(d / (name + ext))
+    return name
 
 
 def pid_alive(pid):
