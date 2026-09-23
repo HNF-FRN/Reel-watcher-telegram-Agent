@@ -2,8 +2,10 @@
 
 Paste this whole file as the prompt for a **Remote** Claude Code routine connected to
 `HNF-FRN/Reel-watcher-telegram-Agent`. Add an API trigger. Select the default
-branch. Give it a cloud environment with **Full** network access and these secrets:
-`REEL_CLOUD_URL`, `REEL_CLOUD_BACKEND_TOKEN`, and `GEMINI_API_KEY` (optional).
+branch. Give it a cloud environment with **Full** network access and
+`REEL_CLOUD_URL` as a plain environment variable. Add the Worker backend token
+as an API credential scoped to the Worker hostname, with an `Authorization`
+header and `Bearer` prefix. `GEMINI_API_KEY` is optional.
 Use a setup script that installs `requirements.txt` and `ffmpeg`.
 
 ---
