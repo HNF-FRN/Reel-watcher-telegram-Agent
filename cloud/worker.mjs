@@ -254,7 +254,7 @@ async function handleBackend(request, env, path) {
     return json({ id: pending.id, decision: pending.decision });
   }
   if (parts[1] === 'approval' && parts[2] && request.method === 'GET') {
-    const pending = await env.DB.prepare('SELECT decision FROM approvals WHERE id=?').bind(parts[2]).first();
+    const pending = await env.DB.prepare('SELECT a.decision,r.status FROM approvals a JOIN runs r ON a.run_id=r.id WHERE a.id=?').bind(parts[2]).first();
     return pending ? json(pending) : text('not found', 404);
   }
   if (parts[1] === 'reminder' && request.method === 'POST') {
