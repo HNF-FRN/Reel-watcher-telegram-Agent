@@ -56,11 +56,14 @@ token is an API trigger token for the routine, not an Anthropic Console API
 key. Add only the GitHub connector if the routine needs to push branches or
 open pull requests; remove unrelated default connectors.
 
-Create a cloud environment with **Full network access**. Add the following
-environment secrets or API credentials:
+Create a cloud environment with **Full network access**. Configure:
 
-- `REEL_CLOUD_URL`: your deployed Worker base URL, without `/telegram`.
-- `REEL_CLOUD_BACKEND_TOKEN`: the same value as Worker `BACKEND_TOKEN`.
+- `REEL_CLOUD_URL` as a plain environment variable: your deployed Worker base
+  URL, without `/telegram`.
+- An API credential for the Worker hostname only, using the same value as
+  Worker `BACKEND_TOKEN` in an `Authorization` header with a `Bearer` prefix.
+  Claude's cloud proxy adds this header to bridge requests without exposing
+  the value to the routine.
 - `GEMINI_API_KEY`: optional Google AI Studio free tier key for video analysis.
 
 For the environment setup script, use:
