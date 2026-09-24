@@ -27,7 +27,7 @@
 <table>
 <tr>
 <td width="46%" valign="top">
-<img src="docs/assets/chat-first-reel.png" alt="A Telegram conversation: a reel link, the bot's breakdown, a build command, and an approval request for 'git init'." width="100%">
+<img src="docs/assets/chat-demo.gif" alt="A Telegram conversation playing out: a reel link, the bot's breakdown card with one-tap next steps, a tapped build command, an approval request for 'git init', and the yes." width="100%">
 </td>
 <td valign="top">
 
@@ -303,6 +303,10 @@ cd cloud; npm install; npm run deploy     # only if you use cloud mode
 ```
 
 Your key, token, reels and reminders are never touched by an update.
+
+## Support
+
+If Reel Agent is useful to you, a star on GitHub helps other people find it. Bugs, ideas and questions are welcome in [Issues](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues).
 
 ## License
 
