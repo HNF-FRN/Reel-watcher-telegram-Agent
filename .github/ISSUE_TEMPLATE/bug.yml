@@ -1,0 +1,27 @@
+name: Something doesn't work
+description: The bot, setup, a build or cloud mode misbehaves
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you sent or ran, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of `.\bot status` (and `.\setup --check` if it's a setup problem)
+      description: Please remove anything private, like tokens, chat IDs or paths with your name.
+      render: text
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options: [PC bot, Cloud mode, Setup, Builds, Reminders, Something else]
+  - type: input
+    id: versions
+    attributes:
+      label: Windows and Claude Code versions
+      placeholder: "Windows 11, Claude Code 2.1.280"
