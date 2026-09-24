@@ -918,14 +918,26 @@ export async function watchdog(env) {
     await reply(env, env.TELEGRAM_OWNER_ID, '🖥 **Your PC bot is back**\nIt’s handling messages again and copies in what the cloud did.', { disable_notification: true }).catch(() => {});
   }
   if (!info.pending_update_count) return;
-  // An update is waiting. A live poller collects it within seconds; look again before deciding.
-  await sleep(Number(env.WATCHDOG_RECHECK_MS ?? 40000));
+  // An update is waiting. A live poller collects it within a second, so a short second look tells us it's stuck:
+  // say so right away (the user is waiting), then give the PC the rest of the grace period before taking over.
+  await sleep(Number(env.WATCHDOG_CONFIRM_MS ?? 8000));
+  const stuck = await tg(env, 'getWebhookInfo');
+  if (stuck.url || !stuck.pending_update_count) return;
+  // Overlapping cron runs: only one sends the heads-up.
+  const warned = await swapState(env, 'notice', 'idle', 'sent', 'idle');
+  if (warned) await reply(env, env.TELEGRAM_OWNER_ID, '⏳ **Got your message**\nYour PC bot isn’t picking it up, so I’m switching to the cloud. One moment…').catch(() => {});
+  await sleep(Number(env.WATCHDOG_RECHECK_MS ?? 30000));
   const again = await tg(env, 'getWebhookInfo');
-  if (again.url || !again.pending_update_count) return;
+  if (again.url || !again.pending_update_count) {
+    if (warned && !again.url && await swapState(env, 'notice', 'sent', 'idle', 'idle'))
+      await reply(env, env.TELEGRAM_OWNER_ID, '🖥 Never mind, your PC bot just picked it up.', { disable_notification: true }).catch(() => {});
+    return;
+  }
   await tg(env, 'setWebhook', { url: hook, secret_token: env.TELEGRAM_WEBHOOK_SECRET, max_connections: 1, drop_pending_updates: false });
+  await setState(env, 'notice', 'idle');
   if (await swapState(env, 'mode', 'pc', 'cloud')) {
     await setState(env, 'mode_since', now());
-    await reply(env, env.TELEGRAM_OWNER_ID, '☁️ **The cloud took over**\nYour PC bot isn’t answering, so I’m answering from the cloud until it starts again.\n\n/menu  what works here  ·  /pc  status', { disable_notification: true }).catch(() => {});
+    await reply(env, env.TELEGRAM_OWNER_ID, '☁️ **The cloud took over**\nI’m answering from the cloud until your PC bot starts again. Your message is next.\n\n/menu  what works here  ·  /pc  status', { disable_notification: true }).catch(() => {});
   }
 }
 
