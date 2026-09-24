@@ -12,20 +12,26 @@ Claude can't take video as input. This skill downloads the video and then:
 
 In the reel-agent project, the main session doesn't run this itself: each reel goes to a background `reel-worker` agent (see `.claude/agents/reel-worker.md`).
 
+Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install yt-dlp imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
+
 ## Steps
 
 1. **Get a source.**
    - Link: use the URL as-is.
    - Telegram video attachment: call the telegram `download_attachment` tool with the `attachment_file_id` and use the local path it returns.
 
-2. **Run the pipeline** from the project root:
+2. **Run the pipeline.** Inside reel-agent, from the project root (this exact form is pre-approved for background workers):
    ```
    python .claude/skills/reel-watch/scripts/reel.py "<url-or-path>" ["<more image paths>"...]
+   ```
+   Installed as a plugin, from the user's current folder (use `python3` if `python` isn't found):
+   ```
+   python "${CLAUDE_SKILL_DIR}/scripts/reel.py" "<url-or-path>" ["<more image paths>"...]
    ```
    Works for video links, local videos, Instagram photo posts (first slide only without login), and one or more
    local images (screenshots, carousel slides). YouTube links are sent to Gemini by URL, no download needed.
    Options: `--engine auto|gemini|local` (default auto), `--max-frames N` for the local engine (default 16; use 24-30 for dense tutorials), `--check-frames N` for Gemini (default 8), `--no-transcript`.
-   Config (env var, or a `.env` file in the project root): `GEMINI_API_KEY`, `REEL_GEMINI_MODEL` (default: `gemini-3.8-flash`, then 3.7 and 3.5 Flash), `REEL_ENGINE`, `REEL_IG_COOKIES`.
+   Config (env var, or a `.env` file in the project root or current folder): `GEMINI_API_KEY`, `REEL_GEMINI_MODEL` (default: `gemini-3.8-flash`, then 3.7 and 3.5 Flash), `REEL_ENGINE`, `REEL_IG_COOKIES`.
    Gemini's free tier allows about 5 requests a minute and 20 a day per model. A model that runs out for the day is remembered in `reels/.gemini_quota.json` and skipped until midnight Pacific; when all are out, the local engine is used.
 
 3. **Exit code 3 = download failed.** Every free method was blocked. Tell the user:

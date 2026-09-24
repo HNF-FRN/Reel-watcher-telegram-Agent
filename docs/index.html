@@ -214,6 +214,9 @@ cd reel-agent
 
 <span class="c"># 4. Start the bot, then message it from your phone</span>
 .\bot start</pre>
+      <p class="sub" style="margin:28px 0 12px">On macOS or Linux, or just want Claude Code to watch videos? Install the watcher as a plugin:</p>
+<pre>/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent
+/plugin install reel-watch@reel-agent</pre>
     </div>
   </section>
 
@@ -222,7 +225,7 @@ cd reel-agent
       <div class="eyebrow">FAQ</div>
       <h2>Questions people ask.</h2>
       <details><summary>Is it free?</summary><p>The code is free and MIT-licensed. Watching uses Gemini's free tier and cloud mode fits Cloudflare's free plan. Planning and building run through Claude Code, so they need a Claude Pro or Max plan (Codex builds use your OpenAI account).</p></details>
-      <details><summary>Does it work on Mac or Linux?</summary><p>Not yet. Most of it is plain Python; the Windows-only parts are listed in <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13">issue #13</a>, and help is welcome.</p></details>
+      <details><summary>Does it work on Mac or Linux?</summary><p>The video watcher does, as a Claude Code plugin: <code>/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent</code>, then <code>/plugin install reel-watch@reel-agent</code>. The full Telegram bot is Windows-only for now; the parts to port are in <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13">issue #13</a>.</p></details>
       <details><summary>Can a malicious reel take over my PC?</summary><p>Reel content is treated as information only and is marked untrusted when passed to a build. No shell command runs without your <code>/yes</code>, and builds can't write outside their folder without asking.</p></details>
       <details><summary>Do I need a Gemini key?</summary><p>No. Without one, a local watcher samples frames and transcribes the audio with Whisper. With a free key, Gemini watches the whole video with sound, which gives much better breakdowns.</p></details>
       <details><summary>What happens when my PC is off?</summary><p>With the optional cloud stand-in, a Cloudflare Worker takes over the same bot after about 40 seconds of silence, answers from the cloud, and hands everything back when your PC starts. Nothing extra runs on the PC.</p></details>

@@ -15,7 +15,7 @@ Pipeline:
     1. fetch   - free download chain: local file -> yt-dlp (no login) -> kkinstagram redirect
                  -> yt-dlp with cookies (only if REEL_IG_COOKIES points to a cookies.txt)
     2. gemini  - (main) Gemini watches the whole video with audio (or looks at the images) and returns
-                 a breakdown + transcript. Needs GEMINI_API_KEY (env var or .env in the project root).
+                 a breakdown + transcript. Needs GEMINI_API_KEY (env var, or .env in the project root or the current folder).
                  A few frames are still extracted so Claude can spot-check on-screen text.
     3. local   - (backup, used when Gemini is off or fails) ffmpeg frames + faster-whisper transcript
     4. output  - manifest.json + a readable summary on stdout
@@ -41,7 +41,19 @@ from pathlib import Path
 UA_BROWSER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
 UA_EMBED_BOT = "TelegramBot (like TwitterBot)"
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_OUT_ROOT = PROJECT_ROOT / "reels"
+
+
+def data_root():
+    """Where reels/ and .env live: $REEL_HOME, else the reel-agent project when run inside it, else the current
+    folder (installed as a Claude Code plugin, the scripts sit in the plugin cache, not next to the user's work)."""
+    if os.environ.get("REEL_HOME"):
+        return Path(os.environ["REEL_HOME"]).expanduser().resolve()
+    cwd = Path.cwd().resolve()
+    return PROJECT_ROOT if cwd == PROJECT_ROOT or PROJECT_ROOT in cwd.parents else cwd
+
+
+DATA_ROOT = data_root()
+DEFAULT_OUT_ROOT = DATA_ROOT / "reels"
 GEMINI_API = "https://generativelanguage.googleapis.com"
 GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]
 GEMINI_INLINE_MAX = 50 * 1024 * 1024  # bigger videos go through the Files API
@@ -298,14 +310,14 @@ class GeminiError(Exception):
 
 
 def load_dotenv():
-    env = PROJECT_ROOT / ".env"
-    if not env.exists():
-        return
-    for line in env.read_text(encoding="utf-8").splitlines():
-        k, sep, v = line.partition("=")
-        k = k.strip()
-        if sep and k and not k.startswith("#") and k not in os.environ:
-            os.environ[k] = v.strip().strip('"').strip("'")
+    for env in dict.fromkeys((DATA_ROOT / ".env", PROJECT_ROOT / ".env")):
+        if not env.exists():
+            continue
+        for line in env.read_text(encoding="utf-8").splitlines():
+            k, sep, v = line.partition("=")
+            k = k.strip()
+            if sep and k and not k.startswith("#") and k not in os.environ:
+                os.environ[k] = v.strip().strip('"').strip("'")
 
 
 def gemini_request(method, url, key, body=None, headers=None, timeout=300):
@@ -326,7 +338,10 @@ def gemini_request(method, url, key, body=None, headers=None, timeout=300):
 # Free tier is roughly 5 requests/minute and 20/day per model, so every call counts. Usage per model is kept in
 # reels/.gemini_usage.json (shown by /quota); a model that hits its daily limit is skipped until midnight Pacific.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import common  # noqa: E402
 from common import gemini_usage, gemini_usage_update  # noqa: E402
+
+common.GEMINI_USAGE = DEFAULT_OUT_ROOT / ".gemini_usage.json"  # same file as before inside reel-agent
 
 
 def exhausted_models():
