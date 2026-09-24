@@ -5,6 +5,8 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-09-01",
   "workers_dev": true,
+  // No extra public preview addresses for each upload.
+  "preview_urls": false,
   // Keep variables set in the Cloudflare dashboard when deploying from here.
   "keep_vars": true,
   "vars": {
