@@ -1,7 +1,7 @@
 <!-- =================================================================== COVER -->
 <section class="cover">
   <div class="grid"></div>
-  <div class="top"><span>Setup guide</span><span>Windows · Telegram · Claude Code</span><span>v1 · 2026</span></div>
+  <div class="top"><span>Setup guide</span><span>Windows · Telegram · Claude Code</span><span>v2 · 2026</span></div>
   <div class="mark">
     <svg width="176mm" height="92mm" viewBox="0 0 176 92" fill="none" stroke="#F6F4EF" stroke-width=".35">
       <rect x="2" y="10" width="34" height="66" rx="5" stroke-opacity=".9"/>
@@ -10,6 +10,9 @@
       <rect x="6" y="38" width="24" height="10" rx="2" stroke-opacity=".5"/>
       <rect x="14" y="52" width="18" height="6" rx="2" fill="#FF5A1F" stroke="none"/>
       <line x1="15" y1="71" x2="23" y2="71" stroke-opacity=".6"/>
+      <path d="M36 22 H54 V12 H70" stroke-dasharray="1.2 1.4" stroke-opacity=".32"/>
+      <rect x="70" y="6" width="36" height="12" rx="1.6" stroke-opacity=".4" stroke-dasharray="1.2 1.2"/>
+      <text x="73" y="13.6" fill="#F6F4EF" stroke="none" font-family="Geist Mono" font-size="2.5" letter-spacing=".25" opacity=".5">CLOUD · STANDBY</text>
       <path d="M36 43 H70" stroke-dasharray="1.2 1.4" stroke-opacity=".7"/>
       <circle cx="70" cy="43" r="1.3" fill="#FF5A1F" stroke="none"/>
       <rect x="70" y="30" width="36" height="26" rx="2" stroke-opacity=".95"/>
@@ -32,7 +35,7 @@
   </div>
   <div class="h1" role="presentation">Reel<br>Agent<span>.</span></div>
   <div class="sub">
-    <div class="t">Set up your own Telegram bot that watches reels, explains them, and builds what they show on your PC, with your approval.</div>
+    <div class="t">Set up your own Telegram bot that watches reels, explains them, and builds what they show on your PC, with your approval. Even while it’s off.</div>
     <div class="v">About 40 minutes<br>No coding needed</div>
   </div>
   <div class="foot"><span>Setup guide</span><span>Keep with the repository</span></div>
@@ -44,7 +47,7 @@
     <div class="num">00<small>Contents</small></div>
     <div>
       <h2>What's inside</h2>
-      <p class="lead">Chapters 01–07 take you from nothing to a working bot. The rest is for making it yours, fixing things, and keeping it up to date.</p>
+      <p class="lead">Chapters 01–07 take you from nothing to a working bot. Chapter 10 keeps it answering while your PC is off. The rest is for making it yours, fixing things, and keeping it up to date.</p>
     </div>
   </div>
   <ol class="toc">
@@ -57,8 +60,9 @@
     <li><span class="n">07</span><span class="ti">Start, pair and test<small>Connect your phone and lock the bot</small></span><span class="pg" data-toc="ch07">—</span></li>
     <li><span class="n">08</span><span class="ti">Your first reel<small>Watch, plan, build, approve</small></span><span class="pg" data-toc="ch08">—</span></li>
     <li><span class="n">09</span><span class="ti">Make it yours<small>Models, modes, reminders, autostart</small></span><span class="pg" data-toc="ch09">—</span></li>
-    <li><span class="n">10</span><span class="ti">Troubleshooting<small>Setup problems and their fixes</small></span><span class="pg" data-toc="ch10">—</span></li>
-    <li><span class="n">11</span><span class="ti">Update and uninstall<small>Staying current, removing it cleanly</small></span><span class="pg" data-toc="ch11">—</span></li>
+    <li><span class="n">10</span><span class="ti">When your PC is off<small>Optional: a free cloud stand-in for the same bot</small></span><span class="pg" data-toc="ch10">—</span></li>
+    <li><span class="n">11</span><span class="ti">Troubleshooting<small>Setup problems and their fixes</small></span><span class="pg" data-toc="ch11">—</span></li>
+    <li><span class="n">12</span><span class="ti">Update and uninstall<small>Staying current, removing it cleanly</small></span><span class="pg" data-toc="ch12">—</span></li>
     <li><span class="n">—</span><span class="ti">Quick reference<small>Setup and everyday commands on one page</small></span><span class="pg" data-toc="qr">—</span></li>
   </ol>
 </section>
@@ -76,13 +80,13 @@
     <div class="side"><span class="label">In one line</span>You scroll. It watches, explains and builds. You approve from your phone.</div>
     <div>
       <p>You see a reel about a tool, an AI workflow or a Claude skill. You share it with your bot. About a minute later it replies with what the reel shows: the exact names, links and commands, and what it would take to set it up. One more message turns that into a plan, and one more into a build on your PC that asks you before every command it runs.</p>
-      <p>It's built on <b>Claude Code</b>, Anthropic's AI coding tool, which runs the bot and the builds on your own Claude plan. <b>Gemini</b> watches the videos, and <b>Telegram</b> is how you talk to it from anywhere.</p>
+      <p>It's built on <b>Claude Code</b>, Anthropic's AI coding tool, which runs the bot and the builds on your own Claude plan. <b>Gemini</b> watches the videos, and <b>Telegram</b> is how you talk to it from anywhere. If you like, a free cloud stand-in keeps the same bot answering while your PC is off (chapter 10).</p>
     </div>
   </div>
 
   <div class="spec">
     <div><span class="label">You talk to it on</span><span class="v">Telegram, any phone</span></div>
-    <div><span class="label">It runs on</span><span class="v">Your Windows PC</span></div>
+    <div><span class="label">It runs on</span><span class="v">Your PC (+ cloud, optional)</span></div>
     <div><span class="label">Brain</span><span class="v">Claude Code (your plan)</span></div>
     <div><span class="label">Watches with</span><span class="v">Gemini (free key)</span></div>
     <div><span class="label">Backup watcher</span><span class="v">Local, no key needed</span></div>
@@ -125,6 +129,7 @@
       <tr><td><b>Telegram</b></td><td class="wrap">The app on your phone. You create your bot inside it.</td><td>Free</td></tr>
       <tr><td><b>Google</b> <span class="tag">recommended</span></td><td class="wrap">A free Gemini API key: the main reel watcher, about 60 reels a day.</td><td>Free tier</td></tr>
       <tr><td><b>OpenAI</b> <span class="tag">optional</span></td><td class="wrap">Only if you also want to build with Codex (GPT).</td><td>Your plan</td></tr>
+      <tr><td><b>Cloudflare</b> <span class="tag">optional</span></td><td class="wrap">Only for cloud mode (chapter 10): the stand-in that answers while your PC is off. No card needed.</td><td>Free</td></tr>
     </tbody>
   </table>
 
@@ -133,7 +138,7 @@
     <thead><tr><th>You need</th><th>Why</th></tr></thead>
     <tbody>
       <tr><td>Windows 10 or 11</td><td class="wrap">The start-up, autostart and reminder parts use Windows features.</td></tr>
-      <tr><td>A PC that stays on</td><td class="wrap">The bot only answers while the PC is awake. Chapter 09 shows how to stop it sleeping.</td></tr>
+      <tr><td>A PC that stays on</td><td class="wrap">The PC answers while it’s awake. Chapter 09 shows how to stop it sleeping; chapter 10 adds a free stand-in for when it’s off.</td></tr>
       <tr><td>About 3 GB of disk</td><td class="wrap">Tools, a speech model for the backup watcher, and your reels.</td></tr>
       <tr><td>Python, Node.js, Git, Claude Code</td><td class="wrap">Chapter 03 installs them in one go.</td></tr>
     </tbody>
@@ -146,6 +151,7 @@
         <tr><td>Videos you send</td><td class="wrap">To Google Gemini to be watched, or processed locally if you skip the key.</td></tr>
         <tr><td>Plans and builds</td><td class="wrap">Through your own Claude account.</td></tr>
         <tr><td>Your messages</td><td class="wrap">Through Telegram, to your bot only.</td></tr>
+        <tr><td>With cloud mode</td><td class="wrap">A copy of your library and reminders in your own Cloudflare account.</td></tr>
       </tbody>
     </table>
     <table>
@@ -197,6 +203,7 @@ cd reel-agent</pre>
 ├─ .env.example           <span class="x">becomes .env with your key</span>
 ├─ <span class="d">.claude\</span>               <span class="x">skills, agent, permissions</span>
 ├─ <span class="d">reminders\</span>             <span class="x">the reminder list</span>
+├─ <span class="d">cloud\</span>                 <span class="x">optional stand-in (chapter 10)</span>
 └─ <span class="d">docs\</span>                  <span class="x">this guide</span></pre>
   </div>
 </section>
@@ -349,7 +356,7 @@ Running: 0 watching · 0 building
 Library: 0 reels · 0 builds<span class="tm">10:13</span></div>
       </div>
       <div class="figure"><div class="cap"><b>Figure 2.</b> Pairing, then a health check. After pairing, only your account gets answers.</div></div>
-      <div class="note plain"><span class="label">Silent?</span><p>Run <code>.\bot status</code> on the PC. If it shows a problem, <code>.\bot fix</code>. More in chapter 10.</p></div>
+      <div class="note plain"><span class="label">Silent?</span><p>Run <code>.\bot status</code> on the PC. If it shows a problem, <code>.\bot fix</code>. More in chapter 11.</p></div>
     </div>
   </div>
 </section>
@@ -429,7 +436,7 @@ To get it here: install a Claude skill.
     </div>
     <div>
       <h3 class="mt0"><span class="k">9.4</span> Keep the PC awake</h3>
-      <p>A sleeping PC means a silent bot. <b>Settings → System → Power → Screen and sleep</b> → "When plugged in, put my device to sleep after" → <b>Never</b>. The screen can still turn off.</p>
+      <p>A sleeping PC means a silent bot. <b>Settings → System → Power → Screen and sleep</b> → "When plugged in, put my device to sleep after" → <b>Never</b>. The screen can still turn off. Or let it sleep and set up cloud mode (chapter 10).</p>
 
       <h3><span class="k">9.5</span> Start with Windows</h3>
       <p>If you said yes in setup, the bot starts when you log in and restarts itself if it crashes. Change it any time with <code>.\bot autostart on</code> or <code>off</code>.</p>
@@ -448,7 +455,157 @@ codex        <span class="c"># sign in once</span></pre>
 <!-- =================================================================== 10 -->
 <section class="chapter" id="ch10">
   <div class="opener">
-    <div class="num">10<small>Fixes</small></div>
+    <div class="num">10<small>Optional</small></div>
+    <div>
+      <h2>When your PC is off</h2>
+      <p class="lead">A free stand-in on Cloudflare keeps the same bot answering while your PC sleeps or is shut down, and hands it back when the PC starts. Nothing extra runs on the PC.</p>
+    </div>
+  </div>
+
+  <div class="figure">
+    <svg width="176mm" height="46mm" viewBox="0 0 1004 262" fill="none" stroke="#141414" stroke-width="1.5" style="display:block">
+      <style>.m{font-family:"Geist Mono",monospace;font-size:13px;letter-spacing:1.4px;font-weight:500}.s{font-family:"Geist",sans-serif;font-size:13.5px}</style>
+      <line x1="502" y1="4" x2="502" y2="256" stroke-opacity=".18" stroke-dasharray="4 6"/>
+      <circle cx="6" cy="12" r="4.5" fill="#141414" stroke="none"/>
+      <text x="18" y="17" class="m" fill="#141414" stroke="none">PC ON<tspan fill="#75726A">  ·  YOUR PC BOT ANSWERS</tspan></text>
+      <circle cx="524" cy="12" r="4.5" fill="#FF5A1F" stroke="none"/>
+      <text x="536" y="17" class="m" fill="#C23D0B" stroke="none">PC OFF<tspan fill="#75726A">  ·  THE CLOUD STANDS IN</tspan></text>
+
+      <!-- PC on -->
+      <rect x="4" y="48" width="60" height="116" rx="10"/>
+      <rect x="13" y="61" width="32" height="9" rx="2.5" stroke-opacity=".45"/>
+      <rect x="22" y="77" width="34" height="9" rx="2.5" fill="#FF5A1F" stroke="none"/>
+      <rect x="13" y="93" width="39" height="16" rx="2.5" stroke-opacity=".45"/>
+      <rect x="30" y="116" width="26" height="9" rx="2.5" fill="#FF5A1F" stroke="none"/>
+      <line x1="27" y1="153" x2="41" y2="153" stroke-opacity=".5"/>
+      <path d="M64 106 H130" stroke-opacity=".8"/>
+      <circle cx="130" cy="106" r="3" fill="#FF5A1F" stroke="none"/>
+      <rect x="130" y="78" width="140" height="56" rx="3"/>
+      <text x="142" y="98" class="m" fill="#141414" stroke="none">YOUR PC · BOT</text>
+      <line x1="142" y1="112" x2="256" y2="112" stroke-opacity=".25"/>
+      <line x1="142" y1="122" x2="232" y2="122" stroke-opacity=".25"/>
+      <path d="M270 94 C294 94 294 66 318 66" stroke-opacity=".7"/>
+      <path d="M270 106 H318" stroke-opacity=".7"/>
+      <path d="M270 118 C294 118 294 146 318 146" stroke-opacity=".7"/>
+      <rect x="318" y="50" width="166" height="32" rx="3" stroke-opacity=".85"/>
+      <rect x="318" y="90" width="166" height="32" rx="3" stroke="#FF5A1F" stroke-width="1.8"/>
+      <rect x="318" y="130" width="166" height="32" rx="3" stroke-opacity=".85"/>
+      <text x="330" y="71" class="m" fill="#141414" stroke="none">WATCH · GEMINI</text>
+      <text x="330" y="111" class="m" fill="#C23D0B" stroke="none">BUILD · CLAUDE</text>
+      <text x="330" y="151" class="m" fill="#141414" stroke="none">REMIND · YOU</text>
+      <path d="M34 164 V221 H130" stroke-opacity=".35" stroke-dasharray="4 5"/>
+      <rect x="130" y="196" width="214" height="52" rx="3" stroke-opacity=".45" stroke-dasharray="5 5"/>
+      <text x="142" y="217" class="m" fill="#75726A" stroke="none">CLOUD · STANDBY</text>
+      <text x="142" y="237" class="s" fill="#75726A" stroke="none">looks at Telegram once a minute</text>
+
+      <!-- PC off -->
+      <rect x="520" y="48" width="60" height="116" rx="10"/>
+      <rect x="529" y="61" width="32" height="9" rx="2.5" stroke-opacity=".45"/>
+      <rect x="538" y="77" width="34" height="9" rx="2.5" fill="#FF5A1F" stroke="none"/>
+      <rect x="529" y="93" width="39" height="16" rx="2.5" stroke-opacity=".45"/>
+      <rect x="546" y="116" width="26" height="9" rx="2.5" fill="#FF5A1F" stroke="none"/>
+      <line x1="543" y1="153" x2="557" y2="153" stroke-opacity=".5"/>
+      <rect x="646" y="36" width="140" height="30" rx="3" stroke-opacity=".3" stroke-dasharray="5 5"/>
+      <text x="658" y="56" class="m" fill="#141414" fill-opacity=".38" stroke="none">YOUR PC · OFF</text>
+      <path d="M580 106 H646" stroke="#FF5A1F" stroke-width="1.8"/>
+      <circle cx="646" cy="106" r="3" fill="#FF5A1F" stroke="none"/>
+      <rect x="646" y="78" width="140" height="56" rx="3" stroke="#FF5A1F" stroke-width="2"/>
+      <text x="658" y="98" class="m" fill="#C23D0B" stroke="none">CLOUD WORKER</text>
+      <line x1="658" y1="112" x2="772" y2="112" stroke="#FF5A1F" stroke-opacity=".45"/>
+      <line x1="658" y1="122" x2="748" y2="122" stroke="#FF5A1F" stroke-opacity=".45"/>
+      <path d="M786 94 C810 94 810 66 834 66" stroke-opacity=".7"/>
+      <path d="M786 106 H834" stroke-opacity=".7"/>
+      <path d="M786 118 C810 118 810 146 834 146" stroke-opacity=".7"/>
+      <rect x="834" y="50" width="166" height="32" rx="3" stroke-opacity=".85"/>
+      <rect x="834" y="90" width="166" height="32" rx="3" stroke-opacity=".85"/>
+      <rect x="834" y="130" width="166" height="32" rx="3" stroke-opacity=".85"/>
+      <text x="846" y="71" class="m" fill="#141414" stroke="none">WATCH · GEMINI</text>
+      <text x="846" y="111" class="m" fill="#141414" stroke="none">BUILD · ROUTINE</text>
+      <text x="846" y="151" class="m" fill="#141414" stroke="none">REMIND · YOU</text>
+      <path d="M716 134 V196" stroke="#FF5A1F" stroke-opacity=".7" stroke-dasharray="4 5"/>
+      <rect x="646" y="196" width="214" height="52" rx="3" stroke-opacity=".45" stroke-dasharray="5 5"/>
+      <text x="658" y="217" class="m" fill="#75726A" stroke="none">LIBRARY · SYNCED</text>
+      <text x="658" y="237" class="s" fill="#75726A" stroke="none">reels, reminders, numbers</text>
+    </svg>
+    <div class="cap"><b>Figure 4.</b> Left, the PC answers and the cloud waits. Right, the PC is off: the same bot answers from the cloud, and your library stays in step.</div>
+  </div>
+
+  <h3><span class="k">10.1</span> How the switch works</h3>
+  <div class="flow">
+    <div><span class="n">01 · OFF</span><div class="h">The PC stops</div><p>Asleep, shut down, offline, or the bot window closed.</p></div>
+    <div><span class="n">02 · WAIT</span><div class="h">A message waits</div><p>Once a minute the cloud asks Telegram if anything is uncollected.</p></div>
+    <div><span class="n">03 · CLOUD</span><div class="h">It takes over</div><p>After about 40 seconds, and it tells you so on Telegram.</p></div>
+    <div><span class="n">04 · BACK</span><div class="h">The PC returns</div><p>The bot takes Telegram back on start and copies in what the cloud did.</p></div>
+  </div>
+  <p class="muted">Only the first message after the PC goes off waits, for a minute or two. After that the cloud answers straight away. You never switch anything by hand.</p>
+
+  <h3><span class="k">10.2</span> What works while the PC is off</h3>
+  <table>
+    <thead><tr><th style="width: 40mm;">Where it runs</th><th>Commands</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap"><b>In the cloud</b> <span class="tag on">free</span></td><td class="wrap"><span class="cmd">/jobs</span> · <span class="cmd">/r N</span> · <span class="cmd">/find</span> · <span class="cmd">/new</span> · <span class="cmd">/save N</span> · <span class="cmd">/remind</span> · <span class="cmd">/todo</span> · <span class="cmd">/reminders</span> · <span class="cmd">/done</span> · <span class="cmd">/snooze</span> · <span class="cmd">/pc</span>, and <b>videos, photos and YouTube links</b> you send, watched by Gemini.</td></tr>
+      <tr><td class="wrap"><b>A Claude routine</b> <span class="tag">1 run each</span></td><td class="wrap">Instagram and TikTok links, <span class="cmd">/plan N</span>, <span class="cmd">/build N</span> (approve with <span class="cmd">/yes N</span>), and plain-text requests. Routines run on your Claude plan and have a daily cap.</td></tr>
+      <tr><td class="wrap"><b>Waits for the PC</b></td><td class="wrap"><span class="cmd">/tell</span>, <span class="cmd">/diff</span>, <span class="cmd">/deploy</span>, <span class="cmd">/quota</span> and settings. The bot says so instead of spending a run.</td></tr>
+    </tbody>
+  </table>
+  <div class="two">
+    <div class="note plain"><span class="label">One library</span><p>Reel and reminder numbers carry on from the PC's, so <span class="cmd">/r 3</span> is the same reel on either side. Reminders go out once: from the PC, or from the cloud if the PC is off.</p></div>
+    <div class="note plain"><span class="label">Builds stay private</span><p>A cloud build can't touch a switched-off PC. It pushes a branch and a draft pull request to a <b>private</b> GitHub repository of yours.</p></div>
+  </div>
+
+  <h3 style="break-before: page; margin-top: 0;"><span class="k">10.3</span> Set it up</h3>
+  <div class="two" style="grid-template-columns: 1fr 64mm;">
+    <div>
+      <p class="muted">Once the bot works on the PC. In the project's <code>cloud</code> folder:</p>
+      <ol class="steps">
+        <li><span class="no">01</span><div class="bd"><span class="t">Log in to Cloudflare</span>
+<pre>npm install
+npx wrangler login     <span class="c"># then choose Allow</span></pre></div></li>
+        <li><span class="no">02</span><div class="bd"><span class="t">Create the database</span>
+<pre>npx wrangler d1 create reel-agent-cloud
+copy wrangler.jsonc wrangler.local.jsonc</pre><p>Put its <code>database_id</code> in <code>wrangler.local.jsonc</code>:</p>
+<pre>npx wrangler d1 execute reel-agent-cloud
+  --remote --file=schema.sql</pre></div></li>
+        <li><span class="no">03</span><div class="bd"><span class="t">Add the secrets, then deploy</span><p>Each asks for its value: bot token, Telegram user ID, two random 32+ character strings, Gemini key.</p>
+<pre>npx wrangler secret put TELEGRAM_BOT_TOKEN
+  --config wrangler.local.jsonc
+<span class="c"># repeat for TELEGRAM_OWNER_ID,</span>
+<span class="c">#   TELEGRAM_WEBHOOK_SECRET, BACKEND_TOKEN,</span>
+<span class="c">#   GEMINI_API_KEY</span>
+npm run deploy</pre><p class="muted">Put the address it prints in <code>PUBLIC_URL</code>, then deploy again.</p></div></li>
+        <li><span class="no">04</span><div class="bd"><span class="t">Create the Claude routine</span><p>At <b>claude.ai/code/routines</b>: this repository plus a new <b>private</b> one for builds, the prompt in <code>cloud/ROUTINE.md</code> and an <b>API trigger</b>. Its URL and token become two more secrets (<code>cloud/README.md</code>).</p></div></li>
+        <li><span class="no">05</span><div class="bd"><span class="t">Connect the PC</span>
+<pre>python cloud\pc_link.py setup
+  https://&lt;your-worker&gt;.workers.dev</pre><p class="muted">Sends your library; the bot syncs on every start.</p></div></li>
+      </ol>
+    </div>
+    <div>
+      <div class="chat">
+        <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
+        <div class="msg out">🎞 Video · 0:42
+this MCP thing looks useful<span class="tm">22:41</span></div>
+        <div class="msg">☁️ Your PC bot isn’t answering, so the cloud took over. Reels, plans and builds run in the cloud until the PC bot starts again (<span class="cmd">/pc</span>).<span class="tm">22:42</span></div>
+        <div class="msg"><b>#7 🎬 An MCP server that lets Claude read your open browser tabs</b>
+
+• Repo: <code>example/tab-mcp</code>
+• Install: <code>npx tab-mcp init</code>
+
+<span class="cmd">/r 7 full</span> · <span class="cmd">/plan 7</span> · <span class="cmd">/save 7</span><span class="tm">22:43</span></div>
+        <div class="msg out"><span class="cmd">/remind tomorrow 9:00 try #7</span><span class="tm">22:44</span></div>
+        <div class="msg">OK R6 (2026-09-25 09:00) try #7<span class="tm">22:44</span></div>
+        <div class="msg">🖥 Your PC bot is back and handling messages again.<span class="tm">08:12</span></div>
+      </div>
+      <div class="figure"><div class="cap"><b>Figure 5.</b> The PC is off at night: the cloud answers, watches the video and books the reminder. In the morning the PC takes over again.</div></div>
+      <div class="note"><span class="label">Test it</span><p>Close the bot window and send <span class="cmd">/pc</span>. Within about two minutes the cloud answers. Start the bot again and it takes over.</p></div>
+      <div class="note plain"><span class="label">You need</span><p>About 20 minutes, a free Cloudflare account (no card) and routines on your Claude plan. Cloud plans, builds and link watching use its routine runs. <span class="cmd">/failover off</span> turns the stand-in off.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== 11 -->
+<section class="chapter" id="ch11">
+  <div class="opener">
+    <div class="num">11<small>Fixes</small></div>
     <div>
       <h2>Troubleshooting</h2>
       <p class="lead">Start with <code>.\bot status</code> in the project folder. It checks the three things that matter most.</p>
@@ -467,15 +624,17 @@ codex        <span class="c"># sign in once</span></pre>
       <tr><td class="wrap"><b>"I couldn't grab that one"</b></td><td class="wrap">The platform blocked the free download.</td><td class="wrap">Save the video on your phone and send the file itself. <code>.\bot update</code> often helps too.</td></tr>
       <tr><td class="wrap"><b>"Used the backup watcher"</b></td><td class="wrap">Gemini's free quota is used up for today.</td><td class="wrap">Wait for midnight Pacific, or enable billing on the key.</td></tr>
       <tr><td class="wrap"><b>First reel very slow</b></td><td class="wrap">No Gemini key: the speech model downloads once.</td><td class="wrap">Let it finish (about 500 MB). Later reels are faster.</td></tr>
-      <tr><td class="wrap"><b>Reminder didn't arrive</b></td><td class="wrap">PC asleep or off at that time.</td><td class="wrap">It's sent when the PC wakes. Keep the PC awake (chapter 09).</td></tr>
+      <tr><td class="wrap"><b>Reminder didn't arrive</b></td><td class="wrap">PC asleep or off at that time.</td><td class="wrap">It's sent when the PC wakes. With cloud mode it arrives on time (chapter 10).</td></tr>
+      <tr><td class="wrap"><b>PC off, no answer after 3 min</b></td><td class="wrap">Cloud mode not set up, or switched off.</td><td class="wrap">Set it up (chapter 10), or send <span class="cmd">/failover on</span> from the PC bot. <code>python cloud\pc_link.py status</code> shows who has the bot.</td></tr>
+      <tr><td class="wrap"><b>"Claude routine limit reached"</b></td><td class="wrap">Today's cloud routine runs are used up.</td><td class="wrap">Commands, reminders and video watching still work in the cloud; plans, builds and links reset tomorrow.</td></tr>
     </tbody>
   </table>
 </section>
 
-<!-- =================================================================== 11 -->
-<section class="chapter" id="ch11">
+<!-- =================================================================== 12 -->
+<section class="chapter" id="ch12">
   <div class="opener">
-    <div class="num">11<small>Upkeep</small></div>
+    <div class="num">12<small>Upkeep</small></div>
     <div>
       <h2>Update and uninstall</h2>
       <p class="lead">Updating takes a minute. Removing it cleanly takes five steps.</p>
@@ -483,14 +642,16 @@ codex        <span class="c"># sign in once</span></pre>
   </div>
   <div class="two">
     <div>
-      <h3 class="mt0"><span class="k">11.1</span> Update</h3>
+      <h3 class="mt0"><span class="k">12.1</span> Update</h3>
 <pre><span class="c"># in the project folder</span>
 git pull          <span class="c"># new bot version</span>
 .\bot update      <span class="c"># tools</span>
-.\bot restart</pre>
+.\bot restart
+<span class="c"># cloud mode only: redeploy the stand-in</span>
+cd cloud; npm install; npm run deploy</pre>
       <p class="muted">Your key, token, reels and reminders are never touched by an update. Run <code>.\setup --check</code> afterwards if the release notes mention new steps.</p>
 
-      <h3><span class="k">11.2</span> At the PC</h3>
+      <h3><span class="k">12.2</span> At the PC</h3>
       <table>
         <tbody>
           <tr><td><code>.\bot status</code></td><td class="wrap">Running? Connected? Building?</td></tr>
@@ -501,7 +662,7 @@ git pull          <span class="c"># new bot version</span>
       </table>
     </div>
     <div>
-      <h3 class="mt0"><span class="k">11.3</span> Uninstall</h3>
+      <h3 class="mt0"><span class="k">12.3</span> Uninstall</h3>
       <ol class="steps">
         <li><span class="no">01</span><div class="bd"><span class="t">Stop it</span><pre>.\bot stop
 .\bot autostart off</pre></div></li>
@@ -509,6 +670,7 @@ git pull          <span class="c"># new bot version</span>
         <li><span class="no">03</span><div class="bd"><span class="t">Remove the plugin</span><pre>claude plugin uninstall telegram@claude-plugins-official</pre></div></li>
         <li><span class="no">04</span><div class="bd"><span class="t">Delete the bot</span><p>Send <span class="cmd">/deletebot</span> to BotFather, and delete the Gemini key in AI Studio.</p></div></li>
         <li><span class="no">05</span><div class="bd"><span class="t">Delete the folders</span><p>The project folder, and <code>builds</code> next to it if you want your builds gone too.</p></div></li>
+        <li><span class="no">06</span><div class="bd"><span class="t">Cloud mode, if you set it up</span><p>In Cloudflare delete the <b>reel-agent-telegram</b> Worker and the <b>reel-agent-cloud</b> database; delete the routine at claude.ai/code/routines.</p></div></li>
       </ol>
     </div>
   </div>
@@ -523,16 +685,16 @@ git pull          <span class="c"># new bot version</span>
       <h5>Setup, once</h5>
       <dl>
         <dt>git clone &lt;url&gt;</dt><dd>Download the project</dd>
-        <dt>.\setup</dt><dd>Checks and installs everything</dd>
+        <dt>.\setup</dt><dd>Installs everything</dd>
         <dt>.\bot start</dt><dd>Opens the bot window</dd>
-        <dt>pair &lt;code&gt;</dt><dd>In the bot window: /telegram:access pair</dd>
+        <dt>pair &lt;code&gt;</dt><dd>/telegram:access pair</dd>
         <dt>policy allowlist</dt><dd>Then only you can use it</dd>
       </dl>
     </section>
     <section>
       <h5>At the PC</h5>
       <dl>
-        <dt>.\bot status</dt><dd>Running? Connected? Building?</dd>
+        <dt>.\bot status</dt><dd>Running? Connected?</dd>
         <dt>.\bot start · stop</dt><dd>Open or close the bot</dd>
         <dt>.\bot restart</dt><dd>After changing anything</dd>
         <dt>.\bot fix</dt><dd>Bot went silent</dd>
@@ -542,7 +704,7 @@ git pull          <span class="c"># new bot version</span>
     <section>
       <h5>Reels</h5>
       <dl>
-        <dt>a link / video</dt><dd>Breakdown in about a minute</dd>
+        <dt>a link / video</dt><dd>A breakdown, fast</dd>
         <dt>/find words</dt><dd>Search your reels</dd>
         <dt>/r N</dt><dd>Resend a breakdown</dd>
         <dt>/save N</dt><dd>Keep it for later</dd>
@@ -580,10 +742,19 @@ git pull          <span class="c"># new bot version</span>
       </dl>
     </section>
     <section>
+      <h5>PC off (cloud mode)</h5>
+      <dl>
+        <dt>/pc</dt><dd>PC or cloud answering?</dd>
+        <dt>/failover off · on</dt><dd>Stop or allow the takeover</dd>
+        <dt>pc_link.py status</dt><dd>Cloud tasks, at the PC</dd>
+        <dt>npm run deploy</dt><dd>Update the stand-in</dd>
+      </dl>
+    </section>
+    <section>
       <h5>If something's wrong</h5>
       <dl>
         <dt>bot silent</dt><dd>.\bot status, then .\bot fix</dd>
-        <dt>no pairing code</dt><dd>Is the bot running? Right token?</dd>
+        <dt>no pairing code</dt><dd>Bot running? Token?</dd>
         <dt>download failed</dt><dd>Send the video file itself</dd>
         <dt>scripts disabled</dt><dd>Use .\bot and .\setup</dd>
       </dl>
@@ -591,7 +762,7 @@ git pull          <span class="c"># new bot version</span>
     <section>
       <h5>Where things are</h5>
       <dl>
-        <dt>.env</dt><dd>Your Gemini key (never committed)</dd>
+        <dt>.env</dt><dd>Your Gemini key</dd>
         <dt>CLAUDE.md</dt><dd>How the bot behaves</dd>
         <dt>MANUAL.md</dt><dd>Every command</dd>
         <dt>..\builds\</dt><dd>What the bot built</dd>

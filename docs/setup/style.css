@@ -137,11 +137,11 @@ table.ref td:first-child .cmd { white-space: normal; }
 .qr-page { page: back; break-before: page; width: 210mm; height: 297mm; background: var(--ink); color: var(--paper); padding: 17mm; position: relative; }
 .qr-page h2 { margin: 0; font-size: 30pt; font-weight: 600; letter-spacing: -.035em; }
 .qr-page h2 span { color: var(--accent); }
-.qr-page .intro { color: rgba(246,244,239,.7); font-size: 10pt; margin: 3mm 0 9mm; max-width: 125mm; }
-.qr { display: grid; grid-template-columns: 1fr 1fr; column-gap: 11mm; row-gap: 8mm; }
+.qr-page .intro { color: rgba(246,244,239,.7); font-size: 10pt; margin: 3mm 0 7mm; max-width: 125mm; }
+.qr { display: grid; grid-template-columns: 1fr 1fr; column-gap: 11mm; row-gap: 6mm; }
 .qr section { break-inside: avoid; }
 .qr h5 { margin: 0 0 2mm; padding-bottom: 1.8mm; border-bottom: .3mm solid rgba(246,244,239,.28); font: 500 7pt "Geist Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.qr dl { margin: 0; display: grid; grid-template-columns: 38mm 1fr; column-gap: 3mm; row-gap: 1.9mm; font-size: 9pt; }
+.qr dl { margin: 0; display: grid; grid-template-columns: 38mm 1fr; column-gap: 3mm; row-gap: 1.6mm; font-size: 9pt; }
 .qr dt { font: 500 8.7pt "Geist Mono", monospace; color: var(--paper); white-space: nowrap; }
 .qr dd { margin: 0; color: rgba(246,244,239,.66); }
 .qr-page .foot { position: absolute; left: 17mm; right: 17mm; bottom: 15mm; display: flex; justify-content: space-between; font: 500 7pt "Geist Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(246,244,239,.42); border-top: .3mm solid rgba(246,244,239,.2); padding-top: 4mm; }

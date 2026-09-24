@@ -5,15 +5,16 @@
 <p align="center">
   <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-141414?style=flat-square">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-141414?style=flat-square">
-  <img alt="Built on Claude Code" src="https://img.shields.io/badge/Built%20on-Claude%20Code-FF5A1F?style=flat-square">
   <img alt="Telegram bot" src="https://img.shields.io/badge/Interface-Telegram-141414?style=flat-square">
   <img alt="Gemini video" src="https://img.shields.io/badge/Watches%20with-Gemini-141414?style=flat-square">
+  <img alt="Cloud stand-in on Cloudflare" src="https://img.shields.io/badge/PC%20off%3F-Cloudflare%20stand--in-141414?style=flat-square">
   <img alt="MIT license" src="https://img.shields.io/badge/License-MIT-141414?style=flat-square">
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
+  <a href="#when-your-pc-is-off">When your PC is off</a> ·
   <a href="#commands">Commands</a> ·
   <a href="docs/Reel%20Agent%20Setup%20Guide.pdf">Setup guide (PDF)</a> ·
   <a href="#privacy-and-safety">Privacy</a>
@@ -21,7 +22,7 @@
 
 ---
 
-**Reel Agent** is a Telegram bot that runs on your own Windows PC. Send it an Instagram reel, a TikTok, a YouTube link or a screenshot. It watches the video, tells you exactly what it shows (the tools, links, repos and commands), and can plan and build it on your PC with the AI model you choose, asking you on your phone before it runs a single command.
+**Reel Agent** is a Telegram bot that runs on your own Windows PC. Send it an Instagram reel, a TikTok, a YouTube link or a screenshot. It watches the video, tells you exactly what it shows (the tools, links, repos and commands), and can plan and build it on your PC with the AI model you choose, asking you on your phone before it runs a single command. Turn the PC off and, if you set up the optional cloud stand-in, the same bot keeps answering from the cloud.
 
 <table>
 <tr>
@@ -38,6 +39,7 @@
 - **Asks before every command.** You get the exact command and answer `/yes 4`, `/no 4 <reason>` or `/always 4`.
 - **Lets you pick the model.** Haiku, Sonnet, Opus, Fable or Codex, per task or per build.
 - **Reminds you.** `/remind tomorrow 9:00 …` is booked in Windows Task Scheduler and pings your phone on time, with nothing running in between.
+- **Keeps going when your PC is off.** Optional and free: a Cloudflare Worker takes over the same bot within a minute or two, and hands it back when the PC starts. [How](#when-your-pc-is-off).
 - **Shows what's left.** `/quota` reports Gemini calls left today and your Claude plan usage.
 
 </td>
@@ -78,7 +80,7 @@ Send `/menu` from your phone. That's it.
 
 ## How it works
 
-One **dispatcher** (a Claude Code session with the Telegram channel) receives every message and immediately hands the work to a background worker, so it's always free for the next one.
+One **dispatcher** (a Claude Code session with the Telegram channel) receives every message and immediately hands the work to a background worker, so it's always free for the next one. If you add the cloud stand-in, it waits in the background and only takes the bot while the PC can't.
 
 ```mermaid
 flowchart LR
@@ -104,10 +106,19 @@ flowchart LR
         build --> models
     end
 
+    subgraph cloud["Cloud stand-in · optional, free"]
+        direction LR
+        worker["Cloudflare Worker<br/>same bot, same commands"]
+        routine["Claude routine<br/>links · plans · builds"]
+        worker --> routine
+    end
+
     phone -- "reels, commands" --> bot
     watch -- "breakdown" --> phone
     build -- "🔐 approvals · ✅ results" --> phone
     rem -- "⏰ reminders" --> phone
+    phone -. "only while the PC is off" .-> worker
+    lib <-. "library + reminders stay in sync" .-> worker
 ```
 
 ### Building, with you in the loop
@@ -136,6 +147,71 @@ sequenceDiagram
     Run->>You: ✅ #4 build done · /diff 4 · /undo 4
 ```
 
+## When your PC is off
+
+<p align="center">
+  <img src="docs/assets/cloud-failover.png" alt="Two panels. PC on: your phone talks to the PC bot, which watches with Gemini, builds with Claude and reminds you, while a cloud stand-in waits. PC off: your phone talks to a Cloud Worker that watches, builds through a Claude routine and reminds you, with the library synced. Below, a timeline: PC goes off, a message waits about 40 seconds, the cloud takes over, the PC starts and takes the bot back." width="100%">
+</p>
+
+Cloud mode is optional. It gives the same Telegram bot a stand-in on Cloudflare's free plan. **Nothing extra runs on your PC:** no heartbeat, no background process, no scheduled task. When a message sits uncollected for about 40 seconds (because the PC is asleep, shut down, offline, or the bot window is closed), the stand-in takes the bot and tells you so. When the PC bot starts again, it takes the bot back by itself and copies in everything the cloud did.
+
+<table>
+<tr>
+<td width="40%" valign="top">
+<img src="docs/assets/chat-cloud-mode.png" alt="A Telegram conversation late at night: a video sent to the bot, the message that the cloud took over, the video's breakdown, a reminder set for the morning, and the next morning a message that the PC bot is back." width="100%">
+</td>
+<td valign="top">
+
+### What you get while the PC is off
+
+- **Answered in the cloud, free:** videos, photos and YouTube links you send (watched by Gemini), plus `/jobs`, `/r`, `/find`, `/new`, `/save`, `/remind`, `/todo`, `/reminders`, `/done`, `/snooze` and `/pc`.
+- **One Claude routine run each:** Instagram and TikTok links, `/plan`, `/build` (approve with `/yes N`), and plain-text requests. Routines use your Claude plan and have a daily cap.
+- **Waits for the PC:** `/tell`, `/diff`, `/deploy`, `/quota` and settings. The bot says so instead of spending a run.
+
+**One library.** Reel and reminder numbers carry on from the PC's, so `/r 3` means the same reel on either side.
+
+**Reminders go out once.** The PC sends them as usual; if it's off at that moment, the cloud sends them.
+
+**Builds stay private.** A cloud build can't touch a switched-off PC, so it pushes a branch and a draft pull request to a private repository of yours.
+
+</td>
+</tr>
+</table>
+
+The handover, step by step:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor You
+    participant TG as Telegram
+    participant PC as PC bot
+    participant W as Cloud Worker
+
+    Note over PC: the PC goes to sleep
+    You->>TG: a reel
+    loop every minute
+        W->>TG: anything waiting?
+    end
+    TG-->>W: 1 message, uncollected for 40 s
+    W->>TG: send messages to me from now on
+    TG->>W: the reel
+    W->>You: ☁️ the cloud took over · #7 watching it…
+    W->>You: #7 🎬 breakdown
+    Note over PC: the PC wakes up
+    PC->>TG: take the bot back (its plugin does this on start)
+    PC->>W: copy in #7 and any reminders
+    W->>You: 🖥 your PC bot is back
+```
+
+**Set it up** once you have the bot running on the PC (about 20 minutes). You need a free Cloudflare account (no card) and a Claude Pro or Max plan with routines. Full steps: **[cloud/README.md](cloud/README.md)**, or chapter 10 of the [setup guide](docs/Reel%20Agent%20Setup%20Guide.pdf).
+
+```powershell
+cd cloud; npm install; npx wrangler login     # 1. deploy the Worker and its database (see cloud/README.md)
+# 2. create the Claude routine from cloud/ROUTINE.md
+python cloud\pc_link.py setup https://reel-agent-telegram.<you>.workers.dev   # 3. connect the PC
+```
+
 ## Commands
 
 Type **`/`** in the chat for the menu, or send `/manual` for the full manual. Plain words work too: *"build 4 with opus"*, *"what's running?"*.
@@ -148,6 +224,8 @@ Type **`/`** in the chat for the menu, or send `/manual` for the full manual. Pl
 | `/new <idea>`: build without a reel | `/tell N <message>`: steer it | `/mode safe` · `/limit 45` |
 | `/retry N` · `/rewatch N deep` | `/diff N` · `/undo N` · `/deploy N` | `/remind` · `/todo` · `/reminders` |
 
+With cloud mode: `/pc` says whether the PC or the cloud has the bot, and `/failover off` (or `on`) stops or allows the takeover.
+
 At the PC, from the project folder:
 
 | Command | Does |
@@ -157,6 +235,7 @@ At the PC, from the project folder:
 | `.\bot fix` | Remove extra Telegram connections (the usual cause of a silent bot) |
 | `.\bot update` | Update the video downloader and Claude Code |
 | `.\setup --check` | Re-check the whole setup without changing anything |
+| `python cloud\pc_link.py status` | Cloud mode: who has the bot, what's running in the cloud |
 
 ## Configuration
 
@@ -167,7 +246,7 @@ At the PC, from the project folder:
 | Build mode | `/mode safe\|normal` | normal: edits freely in its folder, asks before commands |
 | Build time limit | `/limit <minutes>` | 60 (time spent waiting for you doesn't count) |
 | Bot behaviour | `CLAUDE.md` (plain English), then `.\bot restart` | |
-| Cloud mode (optional) | [`cloud/README.md`](cloud/README.md): the same bot keeps working while your PC is off (free Cloudflare Worker + Claude routines) | off |
+| Cloud mode | [`cloud/README.md`](cloud/README.md); `/failover on\|off` | off until set up |
 
 ## Project layout
 
@@ -185,8 +264,8 @@ reel-agent/
 │  ├─ settings.json            what runs without asking
 │  └─ bot-settings.json        Telegram plugin on, for the bot only
 ├─ reminders/remind.py         shared reminder list (Task Scheduler)
-├─ cloud/                      optional cloud mode: Worker, routine prompt, PC sync (pc_link.py)
-└─ docs/                       setup guide (PDF + source)
+├─ cloud/                      optional stand-in: Worker, routine prompt, PC sync (pc_link.py), tests
+└─ docs/                       setup guide (PDF + source), README images (+ source)
 ```
 
 Your own data (`.env`, `reels/`, reminder lists) is created on first use and ignored by git.
@@ -194,11 +273,11 @@ Your own data (`.env`, `reels/`, reminder lists) is created on first use and ign
 ## Privacy and safety
 
 - **Reel content is never obeyed.** Videos, captions, transcripts and Gemini's notes are treated as information only. Builds receive them as reference material explicitly marked untrusted. Only your own Telegram messages give instructions.
-- **Only you can use it.** The bot answers the one Telegram account you pair; strangers get no reply.
-- **No command runs without your yes.** There is deliberately no mode that runs shell commands unattended. `/always N` allows one command word for one build.
+- **Only you can use it.** The bot answers the one Telegram account you pair; strangers get no reply. The cloud stand-in checks the same account.
+- **No command runs without your yes.** There is deliberately no mode that runs shell commands unattended. `/always N` allows one command word for one build. Cloud builds ask the same way.
 - **Builds stay in their folder.** Writing elsewhere asks you first; installing elsewhere needs `/deploy N` plus a confirmation. Every build is a git repo you can diff and undo.
-- **Your secrets stay on your PC.** The bot token lives in your user profile, the Gemini key in `.env`; git ignores both. The bot itself is blocked from reading them.
-- **Where data goes:** videos go to Google Gemini if you add a key (free-tier data may be used by Google to improve its products), otherwise they're processed locally. Plans and builds go through your own Claude account.
+- **Your secrets stay yours.** The bot token lives in your user profile, the Gemini key in `.env`; git ignores both, and the bot itself is blocked from reading them. With cloud mode, their copies live in your Cloudflare account's encrypted secrets, and the Claude routine never sees them.
+- **Where data goes:** videos go to Google Gemini if you add a key (free-tier data may be used by Google to improve its products), otherwise they're processed locally. Plans and builds go through your own Claude account. With cloud mode, a copy of your reel library and reminders is kept in your own Cloudflare database.
 
 ## Troubleshooting
 
@@ -209,8 +288,10 @@ Your own data (`.env`, `reels/`, reminder lists) is created on first use and ign
 | "running scripts is disabled" | Use `.\bot` and `.\setup`: they work regardless of the execution policy. |
 | "I couldn't grab that one" | Save the video on your phone and send the file itself. `.\bot update` often helps too. |
 | Breakdowns say "used the backup watcher" | Gemini's free quota is used up for today; `/quota` shows when it resets. |
+| PC off and no answer after 3 minutes | Cloud mode isn't set up, or `/failover off` is on. With the PC back on, `python cloud\pc_link.py status`. |
+| "Claude routine limit reached" | The cloud used today's routine runs. Cheap commands and video watching still work; the rest resets tomorrow. |
 
-More in chapter 10 of the [setup guide](docs/Reel%20Agent%20Setup%20Guide.pdf).
+More in chapter 11 of the [setup guide](docs/Reel%20Agent%20Setup%20Guide.pdf).
 
 ## Updating
 
@@ -218,10 +299,11 @@ More in chapter 10 of the [setup guide](docs/Reel%20Agent%20Setup%20Guide.pdf).
 git pull
 .\bot update
 .\bot restart
+cd cloud; npm install; npm run deploy     # only if you use cloud mode
 ```
 
 Your key, token, reels and reminders are never touched by an update.
 
 ## License
 
-[MIT](LICENSE). Free to use, change and share. Reel Agent is an independent project and is not affiliated with Anthropic, Google or Telegram.
+[MIT](LICENSE). Free to use, change and share. Reel Agent is an independent project and is not affiliated with Anthropic, Google, Cloudflare or Telegram.

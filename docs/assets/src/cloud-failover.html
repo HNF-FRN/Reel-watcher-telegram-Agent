@@ -1,0 +1,114 @@
+<!-- README image: PC on / PC off, and how the switch happens. Rendered by render.py. -->
+<style>
+  body { margin: 0; background: transparent; }
+  #shot { width: 1280px; }
+  svg { display: block; }
+  .m { font-family: "Geist Mono", monospace; font-size: 12.5px; letter-spacing: 2.2px; }
+  .s { font-family: "Geist", sans-serif; font-size: 14px; }
+</style>
+<div id="shot">
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" stroke="#F6F4EF" stroke-width="1.4">
+  <defs>
+    <pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" stroke="#F6F4EF" stroke-opacity=".055" stroke-width="1"/></pattern>
+    <clipPath id="card"><rect width="1280" height="640" rx="24"/></clipPath>
+  </defs>
+  <g clip-path="url(#card)">
+    <rect width="1280" height="640" fill="#141414" stroke="none"/>
+    <rect width="1280" height="640" fill="url(#g)" stroke="none"/>
+  </g>
+
+  <!-- heading -->
+  <text x="56" y="64" class="m" fill="#F6F4EF" fill-opacity=".55" stroke="none">CLOUD MODE · OPTIONAL · FREE</text>
+  <text x="1224" y="64" class="m" fill="#F6F4EF" fill-opacity=".4" stroke="none" text-anchor="end">NOTHING EXTRA RUNS ON YOUR PC</text>
+  <text x="54" y="124" fill="#F6F4EF" stroke="none" font-family="Geist" font-weight="600" font-size="46" letter-spacing="-1.6">Your bot keeps answering when your PC is off<tspan fill="#FF5A1F">.</tspan></text>
+
+  <!-- panel labels -->
+  <line x1="640" y1="172" x2="640" y2="478" stroke-opacity=".14" stroke-dasharray="4 6"/>
+  <circle cx="62" cy="182" r="5" fill="#F6F4EF" stroke="none"/>
+  <text x="78" y="187" class="m" fill="#F6F4EF" stroke="none">PC ON<tspan fill-opacity=".45">  ·  YOUR PC BOT ANSWERS</tspan></text>
+  <circle cx="670" cy="182" r="5" fill="#FF5A1F" stroke="none"/>
+  <text x="686" y="187" class="m" fill="#FF5A1F" stroke="none">PC OFF<tspan fill="#F6F4EF" fill-opacity=".45">  ·  THE CLOUD STANDS IN</tspan></text>
+
+  <!-- ===== panel A: PC on ===== -->
+  <g>
+    <rect x="64" y="222" width="74" height="140" rx="12" stroke-opacity=".9"/>
+    <rect x="75" y="238" width="40" height="11" rx="3" stroke-opacity=".45"/>
+    <rect x="86" y="257" width="42" height="11" rx="3" fill="#FF5A1F" stroke="none"/>
+    <rect x="75" y="276" width="48" height="20" rx="3" stroke-opacity=".45"/>
+    <rect x="96" y="304" width="32" height="11" rx="3" fill="#FF5A1F" stroke="none"/>
+    <line x1="93" y1="350" x2="109" y2="350" stroke-opacity=".55"/>
+
+    <path d="M138 292 H214" stroke-opacity=".75"/>
+    <circle cx="214" cy="292" r="3.2" fill="#FF5A1F" stroke="none"/>
+    <rect x="214" y="257" width="170" height="70" rx="4" stroke-opacity=".95"/>
+    <text x="228" y="280" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">YOUR PC · BOT</text>
+    <line x1="228" y1="298" x2="368" y2="298" stroke-opacity=".28"/>
+    <line x1="228" y1="310" x2="338" y2="310" stroke-opacity=".28"/>
+
+    <path d="M384 275 C412 275 412 239 440 239" stroke-opacity=".7"/>
+    <path d="M384 292 H440" stroke-opacity=".7"/>
+    <path d="M384 309 C412 309 412 345 440 345" stroke-opacity=".7"/>
+    <rect x="440" y="221" width="168" height="36" rx="4" stroke-opacity=".8"/>
+    <rect x="440" y="274" width="168" height="36" rx="4" stroke="#FF5A1F" stroke-width="1.7"/>
+    <rect x="440" y="327" width="168" height="36" rx="4" stroke-opacity=".8"/>
+    <text x="454" y="244" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">WATCH · GEMINI</text>
+    <text x="454" y="297" class="m" fill="#FF5A1F" stroke="none">BUILD · CLAUDE</text>
+    <text x="454" y="350" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">REMIND · YOU</text>
+
+    <path d="M101 362 V430 H214" stroke-opacity=".3" stroke-dasharray="4 5"/>
+    <rect x="214" y="400" width="226" height="60" rx="4" stroke-opacity=".42" stroke-dasharray="5 5"/>
+    <text x="228" y="425" class="m" fill="#F6F4EF" fill-opacity=".55" stroke="none">CLOUD · STANDBY</text>
+    <text x="228" y="446" class="s" fill="#F6F4EF" fill-opacity=".42" stroke="none">looks at Telegram once a minute</text>
+  </g>
+
+  <!-- ===== panel B: PC off ===== -->
+  <g>
+    <rect x="672" y="222" width="74" height="140" rx="12" stroke-opacity=".9"/>
+    <rect x="683" y="238" width="40" height="11" rx="3" stroke-opacity=".45"/>
+    <rect x="694" y="257" width="42" height="11" rx="3" fill="#FF5A1F" stroke="none"/>
+    <rect x="683" y="276" width="48" height="20" rx="3" stroke-opacity=".45"/>
+    <rect x="704" y="304" width="32" height="11" rx="3" fill="#FF5A1F" stroke="none"/>
+    <line x1="701" y1="350" x2="717" y2="350" stroke-opacity=".55"/>
+
+    <rect x="822" y="206" width="170" height="40" rx="4" stroke-opacity=".25" stroke-dasharray="5 5"/>
+    <text x="836" y="231" class="m" fill="#F6F4EF" fill-opacity=".3" stroke="none">YOUR PC · OFF</text>
+
+    <path d="M746 292 H822" stroke="#FF5A1F" stroke-width="1.7"/>
+    <circle cx="822" cy="292" r="3.2" fill="#FF5A1F" stroke="none"/>
+    <rect x="822" y="257" width="170" height="70" rx="4" stroke="#FF5A1F" stroke-width="1.8"/>
+    <text x="836" y="280" class="m" fill="#FF5A1F" stroke="none">CLOUD WORKER</text>
+    <line x1="836" y1="298" x2="976" y2="298" stroke="#FF5A1F" stroke-opacity=".4"/>
+    <line x1="836" y1="310" x2="946" y2="310" stroke="#FF5A1F" stroke-opacity=".4"/>
+
+    <path d="M992 275 C1020 275 1020 239 1048 239" stroke-opacity=".7"/>
+    <path d="M992 292 H1048" stroke-opacity=".7"/>
+    <path d="M992 309 C1020 309 1020 345 1048 345" stroke-opacity=".7"/>
+    <rect x="1048" y="221" width="168" height="36" rx="4" stroke-opacity=".8"/>
+    <rect x="1048" y="274" width="168" height="36" rx="4" stroke-opacity=".8"/>
+    <rect x="1048" y="327" width="168" height="36" rx="4" stroke-opacity=".8"/>
+    <text x="1062" y="244" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">WATCH · GEMINI</text>
+    <text x="1062" y="297" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">BUILD · ROUTINE</text>
+    <text x="1062" y="350" class="m" fill="#F6F4EF" fill-opacity=".8" stroke="none">REMIND · YOU</text>
+
+    <path d="M907 327 V400" stroke="#FF5A1F" stroke-opacity=".6" stroke-dasharray="4 5"/>
+    <rect x="822" y="400" width="226" height="60" rx="4" stroke-opacity=".42" stroke-dasharray="5 5"/>
+    <text x="836" y="425" class="m" fill="#F6F4EF" fill-opacity=".55" stroke="none">LIBRARY · SYNCED</text>
+    <text x="836" y="446" class="s" fill="#F6F4EF" fill-opacity=".42" stroke="none">reels, reminders, numbers</text>
+  </g>
+
+  <!-- ===== timeline ===== -->
+  <line x1="62" y1="530" x2="1218" y2="530" stroke-opacity=".22"/>
+  <circle cx="62" cy="530" r="5.5" fill="#141414" stroke-opacity=".7"/>
+  <circle cx="362" cy="530" r="5.5" fill="#141414" stroke-opacity=".7"/>
+  <circle cx="662" cy="530" r="5.5" fill="#FF5A1F" stroke="none"/>
+  <circle cx="962" cy="530" r="5.5" fill="#F6F4EF" stroke="none"/>
+  <text x="56" y="566" class="m" fill="#F6F4EF" stroke="none"><tspan fill-opacity=".45">01  </tspan>PC GOES OFF</text>
+  <text x="356" y="566" class="m" fill="#F6F4EF" stroke="none"><tspan fill-opacity=".45">02  </tspan>A MESSAGE WAITS ~40 S</text>
+  <text x="656" y="566" class="m" fill="#FF5A1F" stroke="none"><tspan fill="#F6F4EF" fill-opacity=".45">03  </tspan>THE CLOUD TAKES OVER</text>
+  <text x="956" y="566" class="m" fill="#F6F4EF" stroke="none"><tspan fill-opacity=".45">04  </tspan>PC STARTS, TAKES IT BACK</text>
+  <text x="56" y="592" class="s" fill="#F6F4EF" fill-opacity=".5" stroke="none">asleep, shut down, offline or closed</text>
+  <text x="356" y="592" class="s" fill="#F6F4EF" fill-opacity=".5" stroke="none">nobody collects it from Telegram</text>
+  <text x="656" y="592" class="s" fill="#F6F4EF" fill-opacity=".5" stroke="none">same bot, commands and library</text>
+  <text x="956" y="592" class="s" fill="#F6F4EF" fill-opacity=".5" stroke="none">and copies in what the cloud did</text>
+</svg>
+</div>
