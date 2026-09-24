@@ -42,6 +42,9 @@ $alerted = $false
 while ($true) {
     # Jobs a previous run left half-done are marked "interrupted", and old videos are cleaned up
     python $maint startup
+    # Cloud mode (optional, cloud/README.md): copy in what the cloud did while this bot was off. The bot's
+    # Telegram plugin takes the bot back from the cloud by itself when it starts.
+    python "$PSScriptRoot\cloud\pc_link.py" sync --quiet
     Write-Host "Starting reel agent... ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" -ForegroundColor Cyan
     $started = Get-Date
     # The Telegram plugin is switched off in the global settings so no other Claude session on this PC grabs

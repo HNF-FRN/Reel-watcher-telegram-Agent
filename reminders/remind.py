@@ -178,6 +178,18 @@ def tg_send(text):
     return True
 
 
+def cloud_link():
+    """cloud/pc_link.py when cloud mode is set up (see cloud/README.md), else None. Never in dry runs."""
+    if os.environ.get("REMIND_DRYRUN") or (HERE / ".dryrun").exists():
+        return None
+    try:
+        sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
+        from common import cloud_link as find
+        return find()
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------- Task Scheduler (no polling)
 def run_ps(script):
     """Run a PowerShell script without flashing a window (safe under pythonw)."""
@@ -346,11 +358,17 @@ def main():
                 print(f"⏰ {k} (due {v['due']}) {v['text']}")
         elif a.cmd == "send-due":
             now = datetime.now()
+            link = cloud_link()
             for k, v in sorted(items.items(), key=sort_key):
                 if v["status"] != "open" or not v.get("due") or v.get("sent") == v["due"]:
                     continue
                 due = datetime.strptime(v["due"], FMT)
                 if due > now:
+                    continue
+                if link and not link.claim(k, v["due"]):  # the cloud sent it while this PC was off
+                    v["sent"] = v["due"]
+                    if v.get("every"):
+                        v.update(due=next_time(v["due"], v["every"]), sent=None)
                     continue
                 late = f" (was due {v['due']})" if now - due > timedelta(minutes=15) else ""
                 msg = f"⏰ Reminder {k}{late}\n{v['text']}"
@@ -368,6 +386,9 @@ def main():
         # keep Task Scheduler in step with the list after every change (a failed send retries in 10 min)
         if a.cmd in ("add", "done", "delete", "snooze", "send-due"):
             sync(data, retry_minutes=10 if a.cmd == "send-due" else 2)
+            link = cloud_link()
+            if link:
+                link.push_soon()  # the cloud sends reminders that come due while the PC is off
 
 
 if __name__ == "__main__":

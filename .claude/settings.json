@@ -7,6 +7,8 @@
       "PowerShell(python .claude/skills/reel-watch/scripts/jobs.py:*)",
       "Bash(python .claude/skills/reel-watch/scripts/build.py:*)",
       "PowerShell(python .claude/skills/reel-watch/scripts/build.py:*)",
+      "Bash(python cloud/pc_link.py:*)",
+      "PowerShell(python cloud/pc_link.py:*)",
       "Bash(python reminders/remind.py:*)",
       "PowerShell(python reminders/remind.py:*)",
       "Bash(python .claude/skills/reel-watch/scripts/maintain.py digest:*)",

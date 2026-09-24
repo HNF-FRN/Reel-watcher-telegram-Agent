@@ -167,6 +167,7 @@ At the PC, from the project folder:
 | Build mode | `/mode safe\|normal` | normal: edits freely in its folder, asks before commands |
 | Build time limit | `/limit <minutes>` | 60 (time spent waiting for you doesn't count) |
 | Bot behaviour | `CLAUDE.md` (plain English), then `.\bot restart` | |
+| Cloud mode (optional) | [`cloud/README.md`](cloud/README.md): the same bot keeps working while your PC is off (free Cloudflare Worker + Claude routines) | off |
 
 ## Project layout
 
@@ -184,6 +185,7 @@ reel-agent/
 │  ├─ settings.json            what runs without asking
 │  └─ bot-settings.json        Telegram plugin on, for the bot only
 ├─ reminders/remind.py         shared reminder list (Task Scheduler)
+├─ cloud/                      optional cloud mode: Worker, routine prompt, PC sync (pc_link.py)
 └─ docs/                       setup guide (PDF + source)
 ```
 

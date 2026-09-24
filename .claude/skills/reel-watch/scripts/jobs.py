@@ -107,6 +107,17 @@ def main():
     p = sub.add_parser("idea"); p.add_argument("text"); p.add_argument("--chat")
     a = ap.parse_args()
 
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from common import cloud_link
+    link = cloud_link()
+    # A number this PC doesn't know may be a reel the cloud watched while the PC was off: fetch it first.
+    if link and a.cmd in ("show", "set", "tag") and JOBS.exists():
+        if str(a.n) not in json.loads(JOBS.read_text(encoding="utf-8")).get("jobs", {}):
+            try:
+                link.pull()
+            except Exception as e:
+                print(f"(cloud unreachable: {e})", file=sys.stderr)
+
     with locked(write=a.cmd not in ("show", "list", "search")) as data:
         jobs = data["jobs"]
         if a.cmd == "new":
@@ -194,6 +205,8 @@ def main():
             for n in stuck:
                 jobs[n].update(status="interrupted", finished=now())
             print(f"interrupted: {', '.join('#' + n for n in stuck) if stuck else 'none'}")
+    if link and a.cmd not in ("show", "list", "search"):
+        link.push_soon()  # the cloud keeps a copy of the library for when the PC is off
 
 
 if __name__ == "__main__":

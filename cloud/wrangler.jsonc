@@ -1,8 +1,16 @@
+// Template. Deploy with your own copy: cp wrangler.jsonc wrangler.local.jsonc (git-ignored), fill in the
+// database_id and PUBLIC_URL, then `npm run deploy`. Secrets are set with `npx wrangler secret put` (README.md).
 {
   "name": "reel-agent-telegram",
   "main": "worker.mjs",
   "compatibility_date": "2026-09-01",
   "workers_dev": true,
+  // Keep variables set in the Cloudflare dashboard when deploying from here.
+  "keep_vars": true,
+  "vars": {
+    // Your Worker's own address, e.g. https://reel-agent-telegram.<your-subdomain>.workers.dev
+    "PUBLIC_URL": ""
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -10,6 +18,6 @@
       "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID"
     }
   ],
+  // Every minute: failover watchdog, reminders, Gemini watching, routine hand-off.
   "triggers": { "crons": ["* * * * *"] }
 }
-

@@ -113,6 +113,18 @@ SESSION_VARS = ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION", "CLAUDE_CODE_SESSION_
                 "CLAUDE_CODE_SESSION_ATTENDED", "CLAUDE_CODE_SSE_PORT")
 
 
+def cloud_link():
+    """The cloud/pc_link.py module when this install uses cloud mode (reels/config.json has cloud_url), else None."""
+    if not (read_json(CONFIG, {}) or {}).get("cloud_url"):
+        return None
+    try:
+        sys.path.insert(0, str(ROOT / "cloud"))
+        import pc_link  # noqa: PLC0415
+        return pc_link
+    except Exception:
+        return None
+
+
 def clean_env():
     return {k: v for k, v in os.environ.items() if k.upper() not in SESSION_VARS}
 

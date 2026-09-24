@@ -154,6 +154,8 @@ In any Claude session on the PC, just say "remind me tomorrow to…" and it goes
 - Builds run as their own processes. If the bot restarts mid-build, the build either keeps going or shows up as ⏸ interrupted in `/pending`. Either way `/resume N` picks it up.
 - Downloaded videos are deleted after 30 days. Breakdowns, frames and screenshots are kept.
 
+**When the PC is off (cloud mode, if set up).** The bot keeps answering from the cloud: you get "☁️ … the cloud took over" (the first message can take up to ~2 minutes). Send reels, `/new`, `/plan`, `/build`, `/yes`/`/no`, `/jobs`, `/r`, `/find`, `/remind`, `/reminders` as usual. Videos sent as files and YouTube links are watched straight away; Instagram/TikTok links, plans and builds each use one Claude cloud run. Cloud builds become a branch in your private builds repository. PC-only commands (`/tell`, `/diff`, `/deploy`, `/quota`, settings) wait for the PC. When the PC bot starts, it takes over again (🖥 message) and copies everything the cloud did into your library. `/failover off` stops the cloud from taking over.
+
 ---
 
 ## 9. Good to know

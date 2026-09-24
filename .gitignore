@@ -20,3 +20,8 @@ __pycache__/
 docs/guide/
 docs/Reel Agent Guide*.pdf
 docs/*/preview/
+
+# --- cloud worker tooling (wrangler.local.jsonc holds your own database id and URL)
+cloud/node_modules/
+cloud/.wrangler/
+cloud/wrangler.local.jsonc

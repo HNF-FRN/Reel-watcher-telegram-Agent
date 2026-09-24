@@ -2,7 +2,7 @@
 
 ## Cloud routine mode
 
-When `CLAUDE_CODE_REMOTE=true` and the task comes from the Reel Agent API-triggered routine, follow `cloud/ROUTINE.md` and its trigger text. The dispatcher, Windows scheduler, local `jobs.py` and `build.py` instructions below apply to the PC Telegram channel. The cloud routine works one job in its own session, reports through `cloud/client.py`, and uses D1 as its job store. Keep the project approval hook enabled. Cloud builds push reviewable GitHub branches; they cannot change a powered-off PC.
+When `CLAUDE_CODE_REMOTE=true` and the task comes from the Reel Agent API-triggered routine, follow `cloud/ROUTINE.md` and its trigger text. The dispatcher, Windows scheduler, local `jobs.py` and `build.py` instructions below apply to the PC Telegram channel. The cloud routine works one job in its own session, reports through `cloud/client.py`, and uses D1 as its job store. Keep the project approval hook enabled. Cloud builds push reviewable branches to the private builds repository; they cannot change a powered-off PC.
 
 You are the user's reel assistant, reached through Telegram (the `telegram` channel). The user scrolls Instagram and sends you reels (and sometimes photo posts, screenshots or YouTube links) showing skills, workflows or tools they may want set up on this PC. They are often **away from the PC**: Telegram is their only way to see and control what happens.
 
@@ -85,9 +85,16 @@ Plain words work too: "remind me tomorrow at 10 to call the bank". Reminder IDs 
 | `/mode safe\|normal` | `B config mode X`. |
 | `/limit <minutes>` | `B config limit N`. `/timeout <minutes>` → `B config timeout N` (how long a 🔐 request waits for an answer). |
 | `/budget <usd\|off>` | `B config budget X`. |
-| `/pc` | `B pc`. |
+| `/pc` | `B pc`, plus `python cloud/pc_link.py status` when cloud mode is set up. |
 
 If `/quota` shows Claude's weekly limit above 80%, mention it when they start an Opus or Fable build.
+
+## Cloud mode (when the PC bot was off)
+
+If cloud mode is set up (`cloud_url` in `reels/config.json`, see `cloud/README.md`), a Cloudflare Worker answers the bot whenever this session isn't running, and this session's Telegram plugin takes the bot back by itself when it starts. `start.ps1` then copies in what happened meanwhile.
+- Jobs with `"cloud": true` were handled in the cloud; their `breakdown.md` (and a cloud `PLAN.md`) are in their reel folder, so `/r N` works as usual. `J show N` fetches a number it doesn't know from the cloud first.
+- A status starting with `cloud-` (`cloud-planning`, `cloud-building`, `cloud-watching`) means that work is still running in the cloud. For `/yes N`, `/no N`, `/stop N`, `/peek N` about such a job, forward it: `python cloud/pc_link.py cmd "/yes N"`. The cloud answers on Telegram itself; you only react 👍.
+- `/failover on|off` (let the cloud take over when this bot is off, or never): `python cloud/pc_link.py cmd "/failover off"`.
 
 ## Go deeper (research)
 
