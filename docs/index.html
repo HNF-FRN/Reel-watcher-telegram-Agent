@@ -198,24 +198,18 @@
 
   <section id="start">
     <div class="wrap">
-      <div class="eyebrow">Quick start · about 40 minutes</div>
+      <div class="eyebrow">Quick start · one command</div>
       <h2>Up and running on Windows.</h2>
-      <p class="sub">You need Windows 10 or 11, a Claude Pro or Max plan and Telegram. The <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/blob/main/docs/Reel%20Agent%20Setup%20Guide.pdf">setup guide (PDF)</a> has a screenshot for every step.</p>
-<pre><span class="c"># 1. Basics (skip what you have), then open a new PowerShell window</span>
-winget install Python.Python.3.13 OpenJS.NodeJS.LTS Git.Git
-irm https://claude.ai/install.ps1 | iex
+      <p class="sub">You need Windows 10 or 11, a Claude Pro or Max plan and Telegram. The installer gets Python, Git and Claude Code if they're missing, sets everything up, starts the bot and pairs your phone, asking before each change. The <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/blob/main/docs/Reel%20Agent%20Setup%20Guide.pdf">setup guide (PDF)</a> has a screenshot for every step.</p>
+<pre><span class="c"># Node.js first (skip if you have it), then open a new PowerShell window</span>
+winget install OpenJS.NodeJS.LTS
 
-<span class="c"># 2. Get the code</span>
-git clone https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git reel-agent
-cd reel-agent
+npx reel-agent</pre>
+      <p class="sub" style="margin:28px 0 12px">On macOS or Linux? Watch any video from the terminal, or install the watcher as a Claude Code plugin:</p>
+<pre>npx reel-agent watch &lt;link&gt;
 
-<span class="c"># 3. Guided setup: asks before each change</span>
-.\setup
-
-<span class="c"># 4. Start the bot, then message it from your phone</span>
-.\bot start</pre>
-      <p class="sub" style="margin:28px 0 12px">On macOS or Linux, or just want Claude Code to watch videos? Install the watcher as a plugin:</p>
-<pre>/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent
+<span class="c"># in Claude Code</span>
+/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent
 /plugin install reel-watch@reel-agent</pre>
     </div>
   </section>
