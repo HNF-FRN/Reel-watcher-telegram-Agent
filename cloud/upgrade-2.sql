@@ -7,8 +7,8 @@ ALTER TABLE jobs ADD COLUMN pulled INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS jobs_pulled ON jobs(pulled);
 CREATE INDEX IF NOT EXISTS jobs_group ON jobs(media_group) WHERE media_group IS NOT NULL;
 
--- The first version's reminders table was only ever filled by routine runs; the new one mirrors remind.py.
-DROP TABLE IF EXISTS reminders;
+-- The first version's reminders table (filled by routine runs) is kept as reminders_v1; the new one mirrors remind.py.
+ALTER TABLE reminders RENAME TO reminders_v1;
 CREATE TABLE reminders (
   rid TEXT PRIMARY KEY,
   text TEXT NOT NULL,
