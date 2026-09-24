@@ -5,7 +5,6 @@
 <p align="center">
   <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-141414?style=flat-square">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-141414?style=flat-square">
-  <img alt="Built on Claude Code" src="https://img.shields.io/badge/Built%20on-Claude%20Code-FF5A1F?style=flat-square">
   <img alt="Telegram bot" src="https://img.shields.io/badge/Interface-Telegram-141414?style=flat-square">
   <img alt="Gemini video" src="https://img.shields.io/badge/Watches%20with-Gemini-141414?style=flat-square">
   <img alt="Cloud stand-in on Cloudflare" src="https://img.shields.io/badge/PC%20off%3F-Cloudflare%20stand--in-141414?style=flat-square">
