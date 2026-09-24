@@ -12,7 +12,7 @@ Claude can't take video as input. This skill downloads the video and then:
 
 In the reel-agent project, the main session doesn't run this itself: each reel goes to a background `reel-worker` agent (see `.claude/agents/reel-worker.md`).
 
-Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install yt-dlp imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
+Installed on its own (Claude Code: `/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`; Cursor, Codex, Gemini CLI and other agents: `npx skills add HNF-FRN/Reel-watcher-telegram-Agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install yt-dlp imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
 
 ## Steps
 
@@ -24,10 +24,11 @@ Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-
    ```
    python .claude/skills/reel-watch/scripts/reel.py "<url-or-path>" ["<more image paths>"...]
    ```
-   Installed as a plugin, from the user's current folder (use `python3` if `python` isn't found):
+   Installed anywhere else (Claude Code plugin, `npx skills`, another agent), run it from the user's current folder with the path of this skill's own folder (use `python3` if `python` isn't found):
    ```
    python "${CLAUDE_SKILL_DIR}/scripts/reel.py" "<url-or-path>" ["<more image paths>"...]
    ```
+   `${CLAUDE_SKILL_DIR}` is the folder containing this SKILL.md; Claude Code fills it in, other agents should substitute that path themselves.
    Works for video links, local videos, Instagram photo posts (first slide only without login), and one or more
    local images (screenshots, carousel slides). YouTube links are sent to Gemini by URL, no download needed.
    Options: `--engine auto|gemini|local` (default auto), `--max-frames N` for the local engine (default 16; use 24-30 for dense tutorials), `--check-frames N` for Gemini (default 8), `--no-transcript`.

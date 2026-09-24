@@ -91,6 +91,8 @@ The video watcher also works on its own, as a Claude Code plugin: no Telegram bo
 /plugin install reel-watch@reel-agent
 ```
 
+Using another agent? `npx skills add HNF-FRN/Reel-watcher-telegram-Agent` installs it for Cursor, Codex, Gemini CLI and [more](https://skills.sh). On OpenClaw: `openclaw skills install @hnf-frn/reel-watch` ([ClawHub](https://clawhub.ai/hnf-frn/skills/reel-watch)).
+
 Then `pip install yt-dlp imageio-ffmpeg` (plus `faster-whisper` for transcripts without Gemini), set `GEMINI_API_KEY` if you have one, and paste any reel, TikTok, YouTube or X link into Claude Code: *"what does this video show?"* Everything it saves goes to `reels/` in the current folder.
 
 ## How it works
