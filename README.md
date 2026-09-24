@@ -17,10 +17,14 @@
   <a href="#when-your-pc-is-off">When your PC is off</a> ·
   <a href="#commands">Commands</a> ·
   <a href="docs/Reel%20Agent%20Setup%20Guide.pdf">Setup guide (PDF)</a> ·
-  <a href="#privacy-and-safety">Privacy</a>
+  <a href="#privacy-and-safety">Privacy</a> ·
+  <a href="#faq">FAQ</a> ·
+  <a href="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/">Website</a>
 </p>
 
 ---
+
+> **Saw an AI tool in a reel and thought "I should set that up"?** Forward the reel to your bot. It tells you what the video really shows, then builds it on your PC while you approve every step from your phone.
 
 **Reel Agent** is a Telegram bot that runs on your own Windows PC. Send it an Instagram reel, a TikTok, a YouTube link or a screenshot. It watches the video, tells you exactly what it shows (the tools, links, repos and commands), and can plan and build it on your PC with the AI model you choose, asking you on your phone before it runs a single command. Turn the PC off and, if you set up the optional cloud stand-in, the same bot keeps answering from the cloud.
 
@@ -304,9 +308,27 @@ cd cloud; npm install; npm run deploy     # only if you use cloud mode
 
 Your key, token, reels and reminders are never touched by an update.
 
+## FAQ
+
+**Is it free?** The code is (MIT). Watching uses Gemini's free tier, and cloud mode fits Cloudflare's free plan. Planning and building need a Claude Pro or Max plan, since they run through Claude Code; Codex builds use your OpenAI account instead.
+
+**Does it work on Mac or Linux?** Not yet. Most of it is plain Python, and the Windows-only parts are listed in [#13](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13). Help is very welcome.
+
+**Can a malicious reel take over my PC?** Reel content is treated as information, never as instructions, and no shell command runs without your `/yes`. See [Privacy and safety](#privacy-and-safety) and the [security policy](SECURITY.md).
+
+**Do I need Gemini?** No. Without a key, a local watcher samples frames and transcribes the audio with Whisper. Gemini is better because it watches the whole video with sound.
+
+**Which sites work?** Instagram, TikTok, YouTube (including Shorts) and screenshots are tested. Downloads go through `yt-dlp`, so many others probably work; [#14](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/14) is checking which.
+
+**Can I use it without building anything?** Yes. The library alone is useful: every tool and trick you scroll past, searchable with `/find`, `/saved` and `/tag`.
+
+## Contributing
+
+Start with a [`good first issue`](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/labels/good%20first%20issue) or the [macOS and Linux port](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13). [CONTRIBUTING.md](CONTRIBUTING.md) shows where everything lives and how to run the tests. Built something from a reel? Post it in [Show and tell](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/discussions/categories/show-and-tell).
+
 ## Support
 
-If Reel Agent is useful to you, a star on GitHub helps other people find it. Bugs, ideas and questions are welcome in [Issues](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues).
+If Reel Agent is useful to you, **a ⭐ on GitHub** is the best way to help other people find it. Bugs, ideas and questions are welcome in [Issues](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues) and [Discussions](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/discussions).
 
 ## License
 

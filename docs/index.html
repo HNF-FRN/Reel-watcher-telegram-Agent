@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel Agent · turn reels into working setups from your phone</title>
+<meta name="description" content="Open-source Telegram bot for Windows. Send it an Instagram reel, TikTok or YouTube link: it tells you exactly what the video shows, then plans and builds it on your PC with Claude Code, asking your phone before every command.">
+<link rel="canonical" href="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/">
+<meta name="theme-color" content="#141414">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Reel Agent">
+<meta property="og:title" content="Reel Agent · send a reel, get it built">
+<meta property="og:description" content="A Telegram bot that watches the reels you send, explains what they show, and builds them on your PC while you approve every command from your phone. Free and open source.">
+<meta property="og:url" content="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/">
+<meta property="og:image" content="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Reel Agent · send a reel, get it built">
+<meta name="twitter:description" content="Forward a reel to your Telegram bot. It explains what the video shows, then builds it on your PC while you approve each step.">
+<meta name="twitter:image" content="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/assets/social-preview.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141414'/%3E%3Crect x='10' y='6' width='12' height='20' rx='3' fill='none' stroke='%23F6F4EF' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FF5A1F'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Reel Agent",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "description": "Open-source Telegram bot that watches Instagram reels, TikToks and YouTube videos you send it, explains what they show, and plans and builds them on your PC with Claude Code, asking before every command.",
+  "url": "https://hnf-frn.github.io/Reel-watcher-telegram-Agent/",
+  "downloadUrl": "https://github.com/HNF-FRN/Reel-watcher-telegram-Agent",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<style>
+  :root {
+    --bg: #141414; --panel: #1c1c1b; --line: rgba(246,244,239,.12);
+    --text: #F6F4EF; --muted: rgba(246,244,239,.66); --accent: #FF5A1F;
+    --mono: "Geist Mono", ui-monospace, Consolas, monospace;
+    --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .grid-bg { background-image: linear-gradient(rgba(246,244,239,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(246,244,239,.045) 1px, transparent 1px); background-size: 28px 28px; }
+  .eyebrow { font: 500 12px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  nav .logo { font-weight: 600; font-size: 19px; letter-spacing: -.02em; text-decoration: none; }
+  nav .logo span { color: var(--accent); }
+  nav .links { display: flex; gap: 22px; font-size: 15px; }
+  nav .links a { text-decoration: none; color: var(--muted); }
+  nav .links a:hover { color: var(--text); }
+
+  .hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; padding: 56px 0 88px; }
+  h1 { font-size: clamp(44px, 7vw, 84px); line-height: .95; letter-spacing: -.045em; font-weight: 600; margin: 18px 0 24px; }
+  h1 span { color: var(--accent); }
+  .lede { font-size: 20px; color: var(--muted); max-width: 540px; margin: 0 0 32px; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 13px 20px; border-radius: 10px; font-weight: 500; font-size: 16px; text-decoration: none; border: 1px solid var(--line); transition: transform .15s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: rgba(246,244,239,.35); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #141414; }
+  .btn .count { font: 500 13px var(--mono); padding: 2px 8px; border-radius: 6px; background: rgba(20,20,20,.16); }
+  .meta { margin-top: 22px; font: 500 12px var(--mono); letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .phone { justify-self: center; width: min(100%, 340px); border-radius: 34px; border: 1px solid var(--line); padding: 10px; background: #0d0d0d; box-shadow: 0 40px 90px rgba(0,0,0,.55); }
+  .phone.small { width: min(100%, 300px); }
+  .phone img { display: block; width: 100%; height: auto; border-radius: 26px; }
+
+  section { padding: 88px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.05; letter-spacing: -.035em; font-weight: 600; margin: 12px 0 18px; max-width: 720px; }
+  .sub { color: var(--muted); max-width: 640px; margin: 0 0 44px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: s; }
+  .step { border: 1px solid var(--line); border-radius: 16px; padding: 26px; background: var(--panel); }
+  .step::before { counter-increment: s; content: "0" counter(s); font: 500 13px var(--mono); color: var(--accent); }
+  .step h3, .card h3 { font-size: 20px; letter-spacing: -.02em; margin: 14px 0 8px; font-weight: 600; }
+  .step p, .card p { margin: 0; color: var(--muted); font-size: 16px; }
+  code { font: 500 .88em var(--mono); background: rgba(246,244,239,.08); padding: 2px 6px; border-radius: 5px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .card { background: var(--bg); padding: 28px; }
+  .card h3 { margin-top: 0; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  .wide { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); margin-top: 40px; }
+  ul.checks { list-style: none; padding: 0; margin: 0; }
+  ul.checks li { padding: 12px 0 12px 30px; border-bottom: 1px solid var(--line); position: relative; color: var(--muted); }
+  ul.checks li b { color: var(--text); font-weight: 500; }
+  ul.checks li::before { content: ""; position: absolute; left: 4px; top: 21px; width: 9px; height: 9px; border-radius: 2px; background: var(--accent); }
+
+  pre { background: #0d0d0d; border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; overflow-x: auto; font: 500 14px/1.75 var(--mono); color: var(--text); margin: 0; }
+  pre .c { color: rgba(246,244,239,.42); }
+
+  details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+  details summary { cursor: pointer; font-weight: 500; font-size: 18px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+  details summary::after { content: "+"; font-family: var(--mono); color: var(--accent); }
+  details[open] summary::after { content: "–"; }
+  details p { color: var(--muted); margin: 12px 0 0; max-width: 760px; }
+
+  .final { text-align: center; }
+  .final h2, .final .sub { margin-left: auto; margin-right: auto; }
+  .final .ctas { justify-content: center; }
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    .hero, .split { grid-template-columns: 1fr; gap: 40px; }
+    .hero { padding: 24px 0 64px; }
+    .steps, .cards { grid-template-columns: 1fr; }
+    nav .links a:not(.gh) { display: none; }
+    section { padding: 64px 0; }
+    .phone { width: min(100%, 290px); }
+  }
+</style>
+</head>
+<body>
+<header class="grid-bg">
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="#">Reel Agent<span>.</span></a>
+      <div class="links">
+        <a href="#how">How it works</a>
+        <a href="#safety">Safety</a>
+        <a href="#start">Quick start</a>
+        <a class="gh" href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent">GitHub ↗</a>
+      </div>
+    </nav>
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Telegram · Claude Code · Gemini · Cloudflare</div>
+        <h1>Send a reel.<br>Get it <span>built.</span></h1>
+        <p class="lede">Saw an AI tool in a reel and thought "I should set that up"? Forward it to your bot. It tells you what the video really shows, then builds it on your PC while you approve every step from your phone.</p>
+        <div class="ctas">
+          <a class="btn primary" href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent">★ Star on GitHub <span class="count" id="stars" hidden></span></a>
+          <a class="btn" href="#start">Quick start</a>
+        </div>
+        <div class="meta">Free &amp; open source · MIT · Windows 10/11</div>
+      </div>
+      <div class="phone"><img src="assets/chat-demo.gif" width="726" height="1276" alt="A Telegram chat: a reel link, the bot's breakdown with one-tap next steps, a build command, an approval request for git init, and the yes."></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="how">
+    <div class="wrap">
+      <div class="eyebrow">How it works</div>
+      <h2>From "that looks useful" to running on your PC.</h2>
+      <p class="sub">One bot on your own Windows PC. Every reel gets a number and its own worker, so you can keep scrolling and sending.</p>
+      <div class="steps">
+        <div class="step"><h3>Send</h3><p>An Instagram reel, a TikTok, a YouTube link, a video file or screenshots. Straight from the share sheet.</p></div>
+        <div class="step"><h3>Understand</h3><p>Gemini watches the whole video with sound and replies with the tools, repos, links and commands it shows. No key? A local watcher takes over.</p></div>
+        <div class="step"><h3>Build</h3><p><code>/plan 4</code>, then <code>/build 4 sonnet</code>. It builds in its own git repo, and every shell command waits for your <code>/yes</code>.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">What you get</div>
+      <h2>A research assistant and a builder in one chat.</h2>
+      <p class="sub">Everything runs through commands you can tap. Plain words work too: "build 4 with opus".</p>
+      <div class="cards">
+        <div class="card"><h3>Honest breakdowns</h3><p>What the video actually shows, not what the caption claims. <code>/deeper 4</code> checks if it's real, what it costs and what's better.</p></div>
+        <div class="card"><h3>Pick your model</h3><p>Haiku, Sonnet, Opus, Fable or Codex, per task or per build. <code>/quota</code> shows what's left.</p></div>
+        <div class="card"><h3>Undo anything</h3><p>Each build is a git repo: <code>/diff 4</code> to review, <code>/undo 4</code> to roll back, <code>/deploy 4</code> only when you say so.</p></div>
+        <div class="card"><h3>A searchable library</h3><p>Every tool you scrolled past, numbered and tagged. <code>/find</code>, <code>/saved</code>, a Sunday digest.</p></div>
+        <div class="card"><h3>Reminders that fire</h3><p><code>/remind tomorrow 9:00 …</code> is booked in Task Scheduler and pings your phone, with nothing polling.</p></div>
+        <div class="card"><h3>Works with the PC off</h3><p>An optional, free Cloudflare Worker takes over the same bot in a minute or two, and hands it back when the PC starts.</p></div>
+      </div>
+      <img class="wide" src="assets/cloud-failover.png" width="2560" height="1280" loading="lazy" alt="PC on: your phone talks to the PC bot while a cloud stand-in waits. PC off: the Cloud Worker answers, with the library kept in sync.">
+    </div>
+  </section>
+
+  <section id="safety">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow">Safety</div>
+        <h2>It never obeys a reel.</h2>
+        <p class="sub">Videos from strangers are data, not instructions. You stay in charge of everything that touches your PC.</p>
+        <ul class="checks">
+          <li><b>No command without your yes.</b> There's deliberately no unattended mode.</li>
+          <li><b>Reel content is untrusted.</b> Captions, transcripts and Gemini's notes are never followed.</li>
+          <li><b>Only your account.</b> The bot answers the one Telegram account you pair.</li>
+          <li><b>Builds stay in their folder.</b> Writing anywhere else asks first.</li>
+          <li><b>Your keys stay yours.</b> The bot itself is blocked from reading them.</li>
+        </ul>
+      </div>
+      <div class="phone small"><img src="assets/chat-first-reel.png" width="726" height="1276" loading="lazy" alt="A Telegram chat: the bot's breakdown of a reel, listing the tool it shows, the links and commands, and one-tap next steps."></div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <div class="eyebrow">Quick start · about 40 minutes</div>
+      <h2>Up and running on Windows.</h2>
+      <p class="sub">You need Windows 10 or 11, a Claude Pro or Max plan and Telegram. The <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/blob/main/docs/Reel%20Agent%20Setup%20Guide.pdf">setup guide (PDF)</a> has a screenshot for every step.</p>
+<pre><span class="c"># 1. Basics (skip what you have), then open a new PowerShell window</span>
+winget install Python.Python.3.13 OpenJS.NodeJS.LTS Git.Git
+irm https://claude.ai/install.ps1 | iex
+
+<span class="c"># 2. Get the code</span>
+git clone https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git reel-agent
+cd reel-agent
+
+<span class="c"># 3. Guided setup: asks before each change</span>
+.\setup
+
+<span class="c"># 4. Start the bot, then message it from your phone</span>
+.\bot start</pre>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions people ask.</h2>
+      <details><summary>Is it free?</summary><p>The code is free and MIT-licensed. Watching uses Gemini's free tier and cloud mode fits Cloudflare's free plan. Planning and building run through Claude Code, so they need a Claude Pro or Max plan (Codex builds use your OpenAI account).</p></details>
+      <details><summary>Does it work on Mac or Linux?</summary><p>Not yet. Most of it is plain Python; the Windows-only parts are listed in <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13">issue #13</a>, and help is welcome.</p></details>
+      <details><summary>Can a malicious reel take over my PC?</summary><p>Reel content is treated as information only and is marked untrusted when passed to a build. No shell command runs without your <code>/yes</code>, and builds can't write outside their folder without asking.</p></details>
+      <details><summary>Do I need a Gemini key?</summary><p>No. Without one, a local watcher samples frames and transcribes the audio with Whisper. With a free key, Gemini watches the whole video with sound, which gives much better breakdowns.</p></details>
+      <details><summary>What happens when my PC is off?</summary><p>With the optional cloud stand-in, a Cloudflare Worker takes over the same bot after about 40 seconds of silence, answers from the cloud, and hands everything back when your PC starts. Nothing extra runs on the PC.</p></details>
+    </div>
+  </section>
+
+  <section class="final grid-bg">
+    <div class="wrap">
+      <h2>Stop saving reels you'll never set up.</h2>
+      <p class="sub">Free, open source, and yours to change. A star helps other people find it.</p>
+      <div class="ctas">
+        <a class="btn primary" href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent">★ Star on GitHub</a>
+        <a class="btn" href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/discussions">Join the discussion</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="wrap">
+  <footer>
+    <span>Reel Agent · MIT license · by <a href="https://github.com/HNF-FRN">@HNF-FRN</a></span>
+    <span>Independent project, not affiliated with Anthropic, Google, Cloudflare or Telegram.</span>
+  </footer>
+</div>
+
+<script>
+  fetch("https://api.github.com/repos/HNF-FRN/Reel-watcher-telegram-Agent")
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (d && d.stargazers_count >= 10) {
+        const el = document.getElementById("stars");
+        el.textContent = d.stargazers_count.toLocaleString();
+        el.hidden = false;
+      }
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>
