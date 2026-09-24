@@ -33,7 +33,7 @@ def internal(command):
     if any(c in command for c in ";&|`$\n\r><"):
         return False
     return bool(re.fullmatch(
-        r"python3? cloud/(?:client\.py (?:start|get|send|finish|fetch-file|remind)|watch\.py) [\w ./'\"=,:+?-]+",
+        r"python3? cloud/(?:client\.py (?:start|get|send|finish|fetch-file|remind)|watch\.py) .+",
         command.strip(),
     ))
 

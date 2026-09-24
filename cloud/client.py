@@ -13,9 +13,14 @@ TOKEN = os.environ.get("REEL_CLOUD_BACKEND_TOKEN", "")
 
 
 def auth_headers():
+    # Cloudflare answers urllib's default "Python-urllib" User-Agent with
+    # 403 (error 1010) before the Worker runs, so always send our own.
     # Claude cloud's API credential proxy adds Authorization for this host.
     # A local token remains useful for running the bridge outside cloud sessions.
-    return {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
+    headers = {"User-Agent": "reel-agent-cloud/1"}
+    if TOKEN:
+        headers["Authorization"] = f"Bearer {TOKEN}"
+    return headers
 
 
 def call(method, path, body=None):
