@@ -24,11 +24,23 @@ class ApprovalPolicyTests(unittest.TestCase):
             return code, output.getvalue()
 
     def test_trusted_bridge_command_allowed(self):
-        code, output = self.invoke({"tool_name": "Bash", "tool_input": {
+        code, output = self.invoke({"tool_name": "Bash", "cwd": approve.PROJECT, "tool_input": {
             "command": "python cloud/client.py start 12345678-1234-1234-1234-123456789012"
         }})
         self.assertEqual(code, 0)
         self.assertIn('"permissionDecision": "allow"', output)
+
+    def test_summaries_may_contain_punctuation(self):
+        self.assertTrue(approve.internal(
+            'python cloud/client.py finish x --status failed --summary "403 (Forbidden) on #1 — retry!"',
+            approve.PROJECT))
+
+    def test_bridge_trusted_by_full_path_from_the_builds_checkout(self):
+        builds = "/home/user/reel-cloud-builds"
+        self.assertTrue(approve.internal(f"python {approve.PROJECT}/cloud/client.py finish x --summary ok", builds))
+        # A relative cloud/client.py there could be a file the build wrote: it needs approval like anything else.
+        self.assertFalse(approve.internal("python cloud/client.py finish x --summary ok", builds))
+        self.assertFalse(approve.internal(f"python {builds}/cloud/client.py finish x --summary ok", builds))
 
     def test_shell_chaining_not_trusted(self):
         event = {"tool_name": "Bash", "tool_input": {

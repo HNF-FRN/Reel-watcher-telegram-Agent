@@ -58,10 +58,6 @@ def main():
     fetch = sub.add_parser("fetch-file")
     fetch.add_argument("run_id")
     fetch.add_argument("destination")
-    reminder = sub.add_parser("remind")
-    reminder.add_argument("run_id")
-    reminder.add_argument("due_at")
-    reminder.add_argument("message")
     args = parser.parse_args()
 
     if args.command == "start":
@@ -112,14 +108,6 @@ def main():
             while chunk := response.read(1024 * 1024):
                 output.write(chunk)
         print(str(dest))
-    elif args.command == "remind":
-        item = call("GET", f"/backend/run/{args.run_id}")
-        if item["action"] != "remind":
-            raise RuntimeError("This run is not a reminder")
-        result = call("POST", "/backend/reminder", {
-            "chat_id": item["chat_id"], "due_at": args.due_at, "text": args.message,
-        })
-        print(json.dumps(result))
 
 
 if __name__ == "__main__":

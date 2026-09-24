@@ -1,0 +1,13 @@
+{
+  "name": "reel-agent-cloud",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test_worker.mjs",
+    "deploy": "wrangler deploy --config wrangler.local.jsonc"
+  },
+  "devDependencies": {
+    "miniflare": "^4.0.0",
+    "wrangler": "^4.0.0"
+  }
+}

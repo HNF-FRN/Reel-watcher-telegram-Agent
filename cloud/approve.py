@@ -28,14 +28,22 @@ def allow():
     }}))
 
 
-def internal(command):
-    # The cloud bridge and watcher are trusted repo files; shell syntax is not.
+PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))).replace("\\", "/")  # this bot's checkout
+
+
+def internal(command, cwd=None):
+    """The bridge and watcher of THIS checkout are trusted; shell syntax is not. A build works in another
+    checkout (the private builds repo), where a relative cloud/client.py could be a file the build wrote."""
     if any(c in command for c in ";&|`$\n\r><"):
         return False
+    cmd = command.strip().replace("\\", "/")
+    absolute = f" {PROJECT}/cloud/"
+    if absolute in cmd:
+        cmd = cmd.replace(absolute, " cloud/", 1)
+    elif os.path.abspath(cwd or os.getcwd()).replace("\\", "/") != PROJECT:
+        return False
     return bool(re.fullmatch(
-        r"python3? cloud/(?:client\.py (?:start|get|send|finish|fetch-file|remind)|watch\.py) .+",
-        command.strip(),
-    ))
+        r"python3? cloud/(?:client\.py (?:start|get|send|finish|fetch-file)|watch\.py) .+", cmd))
 
 
 def main():
@@ -52,7 +60,7 @@ def main():
     if name not in ("Bash", "PowerShell"):
         return
     command = str(inp.get("command") or "")
-    if internal(command):
+    if internal(command, event.get("cwd")):
         allow()
         return
     session_id = event.get("session_id") or os.environ.get("CLAUDE_CODE_REMOTE_SESSION_ID")
