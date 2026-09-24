@@ -34,7 +34,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python cloud/approve.py",
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/cloud/approve.py"],
             "timeout": 1800
           }
         ]
