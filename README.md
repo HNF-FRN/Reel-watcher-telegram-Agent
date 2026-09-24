@@ -82,6 +82,17 @@ Send `/menu` from your phone. That's it.
 > [!TIP]
 > Add a free Gemini key from [Google AI Studio](https://aistudio.google.com/apikey) when setup asks for it. Breakdowns are much better with it: Gemini watches the whole video with sound.
 
+### Just want Claude to watch videos? (Windows, macOS, Linux)
+
+The video watcher also works on its own, as a Claude Code plugin: no Telegram bot and no Windows needed. In Claude Code:
+
+```
+/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent
+/plugin install reel-watch@reel-agent
+```
+
+Then `pip install yt-dlp imageio-ffmpeg` (plus `faster-whisper` for transcripts without Gemini), set `GEMINI_API_KEY` if you have one, and paste any reel, TikTok, YouTube or X link into Claude Code: *"what does this video show?"* Everything it saves goes to `reels/` in the current folder.
+
 ## How it works
 
 One **dispatcher** (a Claude Code session with the Telegram channel) receives every message and immediately hands the work to a background worker, so it's always free for the next one. If you add the cloud stand-in, it waits in the background and only takes the bot while the PC can't.
@@ -312,7 +323,7 @@ Your key, token, reels and reminders are never touched by an update.
 
 **Is it free?** The code is (MIT). Watching uses Gemini's free tier, and cloud mode fits Cloudflare's free plan. Planning and building need a Claude Pro or Max plan, since they run through Claude Code; Codex builds use your OpenAI account instead.
 
-**Does it work on Mac or Linux?** Not yet. Most of it is plain Python, and the Windows-only parts are listed in [#13](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13). Help is very welcome.
+**Does it work on Mac or Linux?** The video watcher does, [as a Claude Code plugin](#just-want-claude-to-watch-videos-windows-macos-linux). The full Telegram bot is Windows-only for now; the parts to port are listed in [#13](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13), and help is very welcome.
 
 **Can a malicious reel take over my PC?** Reel content is treated as information, never as instructions, and no shell command runs without your `/yes`. See [Privacy and safety](#privacy-and-safety) and the [security policy](SECURITY.md).
 
