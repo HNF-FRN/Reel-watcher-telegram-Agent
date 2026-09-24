@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
@@ -177,27 +178,42 @@ def tg_chats():
     return (read_json(TG_DIR / "access.json", {}) or {}).get("allowFrom", [])
 
 
-def tg_send(text, chat_id=None):
-    """Send a plain-text message to the user (their own DM). Returns True if it went out."""
+def tg_send(text, chat_id=None, reply_to=None):
+    """Send a message to the user (their own DM), formatted by tgfmt: light Markdown becomes bold/code/quotes and
+    commands become one tap. Falls back to plain text if Telegram rejects the markup. Returns the first message id
+    (truthy) if it went out, else None."""
     if os.environ.get("REEL_TG_DRYRUN"):  # tests: log instead of messaging the phone
         with open(REELS / ".tg_dryrun.log", "a", encoding="utf-8") as f:
             f.write(f"--- {now()} to {chat_id or 'owner'}\n{text}\n")
         return True
+    import tgfmt  # noqa: PLC0415 - next to this file
     token = _token()
     chats = [chat_id] if chat_id else tg_chats()
     if not token or not chats:
-        return False
-    ok = True
+        return None
+    first = None
     for chat in chats:
-        for i in range(0, len(text), 4000):  # Telegram caps messages at 4096 chars
-            body = urllib.parse.urlencode({"chat_id": chat, "text": text[i:i + 4000],
-                                           "disable_web_page_preview": "true"}).encode()
-            try:
-                urllib.request.urlopen(f"https://api.telegram.org/bot{token}/sendMessage", body, timeout=30).read()
-            except Exception as e:
-                print(f"telegram send failed: {e}", file=sys.stderr)
-                ok = False
-    return ok
+        for i, part in enumerate(tgfmt.chunks(text)):  # Telegram caps messages at 4096 chars
+            body = {"chat_id": chat, "text": tgfmt.to_html(part), "parse_mode": "HTML",
+                    "link_preview_options": {"is_disabled": True}}
+            if reply_to and i == 0:
+                body["reply_parameters"] = {"message_id": int(reply_to), "allow_sending_without_reply": True}
+            for attempt in ("html", "plain"):
+                try:
+                    res = tg_api("sendMessage", body)
+                    first = first or res.get("result", {}).get("message_id")
+                    break
+                except urllib.error.HTTPError as e:
+                    if attempt == "html" and e.code == 400:  # markup Telegram can't parse: send it plain
+                        body.pop("parse_mode")
+                        body["text"] = tgfmt.plain(part)
+                        continue
+                    print(f"telegram send failed: {e}", file=sys.stderr)
+                    break
+                except Exception as e:
+                    print(f"telegram send failed: {e}", file=sys.stderr)
+                    break
+    return first
 
 
 def tg_api(method, params):

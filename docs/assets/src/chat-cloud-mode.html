@@ -1,4 +1,5 @@
-<!-- README image: the bot answering from the cloud while the PC is off. Rendered by render.py (uses ../../setup/style.css). -->
+<!-- README image: the bot answering from the cloud while the PC is off. Rendered by render.py; message blocks marked
+     tg-md go through the bot's own formatter, and the texts are the Worker's real messages. -->
 <style>
   body { background: var(--paper); margin: 0; }
   #shot { width: 363px; padding: 2px; background: var(--paper); }
@@ -12,24 +13,38 @@
   .vid .play { position: absolute; left: 50%; top: 58%; width: 9mm; height: 9mm; margin: -4.5mm 0 0 -4.5mm; border-radius: 50%; background: rgba(0,0,0,.45); }
   .vid .play::after { content: ""; position: absolute; left: 3.6mm; top: 2.6mm; border-style: solid; border-width: 1.9mm 0 1.9mm 3mm; border-color: transparent transparent transparent #fff; }
   .vid .dur { position: absolute; left: 1.6mm; top: 1.6mm; padding: .2mm 1.2mm; border-radius: 1mm; background: rgba(0,0,0,.45); color: #fff; font: 500 6.2pt "Geist", sans-serif; }
-  .msg ul { margin: .4mm 0 0; padding-left: 3.6mm; }
 </style>
 <div id="shot">
   <div class="chat">
     <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
     <div class="msg out" style="padding-top: 1.4mm; width: fit-content;"><div class="vid"><span class="dur">0:42</span><div class="ui"><i class="o"></i><i></i><i class="s"></i></div><span class="play"></span></div>this MCP thing looks useful<span class="tm">22:41</span></div>
-    <div class="msg">☁️ Your PC bot isn’t answering, so the cloud took over. Reels, plans and builds run in the cloud until the PC bot starts again (<span class="cmd">/pc</span>).<span class="tm">22:42</span></div>
-    <div class="msg">#7 watching it in the cloud…<span class="tm">22:42</span></div>
-    <div class="msg"><b>#7 🎬 An MCP server that lets Claude read your open browser tabs</b>
+    <div class="msg"><tg-md>
+      ☁️ **The cloud took over**
+      Your PC bot isn’t answering, so I’m answering from the cloud until it starts again.
 
-• Repo: <code>example/tab-mcp</code>
-• Install: <code>npx tab-mcp init</code>
-• Works with Claude Code and Desktop
+      /menu  what works here  ·  /pc  status
+    </tg-md><span class="tm">22:42</span></div>
+    <div class="msg"><tg-md>👀 #7 watching it in the cloud…</tg-md><span class="tm">22:42</span></div>
+    <div class="msg"><tg-md>
+      🎬 **#7 · An MCP server that lets Claude read your open browser tabs**
 
-<span class="cmd">/r 7 full</span> · <span class="cmd">/plan 7</span> · <span class="cmd">/save 7</span><span class="tm">22:43</span></div>
-    <div class="msg out"><span class="cmd">/remind tomorrow 9:00 try #7</span><span class="tm">22:44</span></div>
-    <div class="msg">OK R6 (2026-09-25 09:00) try #7<span class="tm">22:44</span></div>
+      **Tools, links and repos**
+      - Repo: `example/tab-mcp`
+      - Install: `npx tab-mcp init`
+
+      **Next**
+      /plan 7  plan it  ·  /build 7  build it
+      /save 7  keep  ·  /r 7 full  all notes
+    </tg-md><span class="tm">22:43</span></div>
+    <div class="msg out"><tg-md>/remind tomorrow 9:00 try #7</tg-md><span class="tm">22:44</span></div>
+    <div class="msg"><tg-md>
+      ⏰ **R6 set** · Fri 25 Sep, 09:00
+      try #7
+    </tg-md><span class="tm">22:44</span></div>
     <div class="day">Next morning</div>
-    <div class="msg">🖥 Your PC bot is back and handling messages again.<span class="tm">08:12</span></div>
+    <div class="msg"><tg-md>
+      🖥 **Your PC bot is back**
+      It’s handling messages again and copies in what the cloud did.
+    </tg-md><span class="tm">08:12</span></div>
   </div>
 </div>

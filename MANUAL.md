@@ -2,6 +2,8 @@
 
 Your Reel Agent Telegram bot watches reels for you and can plan and build what they show, while you're away from the PC. Type `/` in the chat to see every command. Send `/manual` any time to get this file.
 
+**Tap, don't type.** Every message ends with its next steps as blue commands, like `/plan_4` or `/yes_4`. Tap one and it's sent, number included. (Typing works too: `/plan 4` and `/plan_4` mean the same.) Names, commands and paths in grey boxes copy with a tap.
+
 ---
 
 ## 1. The basic loop
@@ -9,13 +11,13 @@ Your Reel Agent Telegram bot watches reels for you and can plan and build what t
 1. **Send a reel.** Paste a link (Instagram, TikTok, YouTube, X), or send the video, photos or screenshots.
    The bot answers `#4 watching it…`. Every reel gets a number, and that number is how you refer to it.
    Send as many as you like; each one is watched on its own, at the same time.
-2. **Read the breakdown.** About a minute later: what it is, what it shows (exact names, links, commands), and what it would take to set up.
+2. **Read the breakdown.** About a minute later, a card: what it is, what it shows (exact names, links, commands), what it would take to set up, and the next steps to tap.
 3. **Decide:**
    - `/plan 4` → a plan for building it. Nothing changes on the PC.
    - `/build 4` → build it (it asks you before running commands).
    - `/save 4` → keep it for later (it shows up in the Sunday digest).
    - `/dismiss 4` → not interested.
-   - `4 3` → dig deeper: find the repo, check if it's real, costs, alternatives.
+   - `/deeper 4` → research it: find the repo, check if it's real, costs, alternatives. (`4 3` still works.)
    - Or write your own: `4 go find the repo yourself`, `4 is this legit?`, `4 make it a skill`. The number picks the reel, and the words are the instruction.
 
 ---

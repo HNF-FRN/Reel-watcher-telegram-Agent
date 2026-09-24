@@ -38,6 +38,26 @@ def call(method, path, body=None):
         return json.loads(content) if content else {}
 
 
+def finish_card(item, args):
+    """The last message of a run, as light Markdown: the Worker formats it and makes commands one tap."""
+    n, action = item.get("job_id"), item.get("action")
+    if args.status != "done":
+        return f"❌ **{f'#{n} ' if n else ''}{action or 'task'} didn't finish**\n{args.summary}"
+    if not n:
+        return f"✅ {args.summary}"
+    if action == "watch":
+        return (f"🎬 **#{n} · {args.summary}**\n\n**Next**\n/r {n}  the breakdown  ·  /plan {n}  plan it\n"
+                f"/save {n}  keep  ·  /dismiss {n}  skip")
+    if action == "plan":
+        return (f"📋 **#{n} plan ready**\n{args.summary}\n\n**Next**\n/r {n} full  read the plan\n"
+                f"/build {n}  build it in the cloud")
+    if action == "build":
+        link = f"\n🔗 {args.branch_url}" if args.branch_url else ""
+        return (f"✅ **#{n} build done**\n{args.summary}{link}\n\n"
+                f"*Review the branch; it installs on your PC once the PC bot is back.*")
+    return f"✅ **#{n}** {args.summary}"
+
+
 def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -87,12 +107,7 @@ def main():
                 patch["branch_url"] = args.branch_url
             call("PATCH", f"/backend/job/{item['job_id']}", patch)
         call("PATCH", f"/backend/run/{args.run_id}", {"status": args.status})
-        prefix = f"#{item['job_id']} " if item.get("job_id") else ""
-        call("POST", "/backend/message", {
-            "chat_id": item["chat_id"],
-            "text": f"{'✅' if args.status == 'done' else '❌'} {prefix}{args.summary}" +
-                    (f"\n{args.branch_url}" if args.branch_url else ""),
-        })
+        call("POST", "/backend/message", {"chat_id": item["chat_id"], "text": finish_card(item, args)})
     elif args.command == "fetch-file":
         item = call("GET", f"/backend/run/{args.run_id}")
         source = json.loads(call("GET", f"/backend/job/{item['job_id']}")["source"])

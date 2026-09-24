@@ -30,7 +30,9 @@ FILL_JS = """pages => {
 
 def assemble():
     css = (HERE / "style.css").read_text(encoding="utf-8")
-    body = (HERE / "body.html").read_text(encoding="utf-8")
+    sys.path.insert(0, str(HERE.parent / "assets" / "src"))
+    from render import telegram_blocks  # chat figures: tg-md blocks go through the bot's own formatter
+    body = telegram_blocks((HERE / "body.html").read_text(encoding="utf-8"))
     page = HERE / "_assembled.html"
     page.write_text(f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <title>Reel Agent — Setup Guide</title>

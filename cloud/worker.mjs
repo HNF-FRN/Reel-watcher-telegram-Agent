@@ -25,15 +25,104 @@ const fieldList = new Set(['status', 'summary', 'breakdown', 'plan', 'branch_url
 const ACTIVE_RUN = "('queued','dispatching','starting','started')";
 const PC_ONLY = new Set(['tell', 'always', 'diff', 'log', 'undo', 'deploy', 'quota', 'models', 'model', 'mode',
   'limit', 'timeout', 'budget', 'digest', 'manual', 'tag']);
+// Examples are in `code` so they can't be tapped by accident.
 const HELP = [
-  '☁️ Cloud mode (your PC bot is off)',
-  '🎬 Send a reel, video, screenshot or YouTube link · /new idea',
-  '📚 /jobs · /r N [full] · /find words · /saved · /save N · /dismiss N',
-  '🛠 /plan N · /build N · /retry N · /rewatch N',
-  '🔐 /yes N · /no N · /pending · /tasks · /peek N · /stop N · /resume N',
-  '⏰ /remind tomorrow 9:00 call the bank · /todo buy domain · /reminders · /done R3 · /snooze R3 1h',
-  '🖥 /pc · PC-only (/tell, /diff, /deploy, /quota…) come back when the PC bot does.',
+  '☁️ **Cloud mode** · your PC bot is off, so I answer from the cloud',
+  '',
+  '🎬 **Reels**',
+  'Send a link, video or screenshots · /jobs · /saved',
+  '`/r N` breakdown · `/find words` · `/new idea`',
+  '`/deeper N` research · `/retry N` · `/rewatch N`',
+  '',
+  '🛠 **Build**',
+  '`/plan N` · `/build N` · 🔐 `/yes N` · `/no N`',
+  '/tasks · /pending · `/peek N` · `/stop N` · `/resume N`',
+  '',
+  '⏰ **Remind**',
+  '`/remind tomorrow 9:00 call the bank`',
+  '`/todo buy domain` · /reminders · `/done R3` · `/snooze R3 1h`',
+  '',
+  '*/pc shows who has the bot. /tell, /diff, /deploy, /quota and settings wait for the PC.*',
 ].join('\n');
+
+// ---------------------------------------------------------------- message formatting (mirrors scripts/tgfmt.py)
+// Light Markdown -> Telegram HTML, and "/plan 4" -> "/plan_4" so a single tap sends the whole command.
+const TAPPABLE = ['plan', 'build', 'yes', 'no', 'always', 'peek', 'stop', 'resume', 'diff', 'log', 'undo', 'deploy', 'r',
+  'save', 'dismiss', 'retry', 'rewatch', 'deeper', 'done', 'snooze', 'failover'];
+const EXTRA = 'haiku|sonnet|opus|fable|codex|safe|normal|deep|local|full|on|off|tomorrow|yes|\\d{1,3}[mhdw]';
+const TAP_RE = new RegExp(`(?<![\\w/])/(${TAPPABLE.join('|')})((?:[ _](?:#?\\d+|R\\d+))(?:[ _](?:${EXTRA}))?|[ _](?:on|off))(?![\\w:/])`, 'gi');
+export const tapify = (text) => text.replace(TAP_RE, (_, cmd, args) => `/${cmd}${args.replace(/ /g, '_').replace(/#/g, '')}`);
+export function commandWords(text) {
+  const m = /^\/([a-z]+)_(\S+)([\s\S]*)$/i.exec(text.trim());
+  return m && TAPPABLE.includes(m[1].toLowerCase()) ? `/${m[1]} ${m[2].replace(/_/g, ' ')}${m[3]}` : text;
+}
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function inline(line) {
+  const codes = [];
+  const links = [];
+  line = line.replace(/`([^`\n]+)`/g, (_, c) => `\u0000${codes.push(c) - 1}\u0000`);
+  line = line.replace(/\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g, (_, t, u) => `\u0000L${links.push([t, u]) - 1}\u0000`);
+  line = esc(line)
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '<b>$1</b>')
+    .replace(/(?<![\w*])\*(?=\S)([^*\n<>]+?)(?<=\S)\*(?![\w*])/g, '<i>$1</i>');
+  line = tapify(line);
+  line = line.replace(/\u0000L(\d+)\u0000/g, (_, i) => `<a href="${esc(links[i][1]).replace(/"/g, '&quot;')}">${esc(links[i][0])}</a>`);
+  return line.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[i])}</code>`);
+}
+
+export function toHtml(text) {
+  const out = [];
+  const quote = [];
+  let fence = null;
+  const flush = () => { if (quote.length) { out.push(`<blockquote>${quote.join('\n')}</blockquote>`); quote.length = 0; } };
+  for (const raw of String(text).split('\n')) {
+    if (fence) {
+      if (raw.trim().startsWith('```')) { out.push(`<pre>${esc(fence.join('\n'))}</pre>`); fence = null; }
+      else fence.push(raw);
+      continue;
+    }
+    if (raw.trim().startsWith('```')) { flush(); fence = []; continue; }
+    if (/^\s*>\s?/.test(raw)) { quote.push(inline(raw.replace(/^\s*>\s?/, ''))); continue; }
+    flush();
+    let m;
+    if (/^\s*\|?\s*:?-{3,}/.test(raw) && raw.includes('|')) continue;
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(raw)) { out.push(''); continue; }
+    if ((m = /^\s*#{1,6}\s+(.*)$/.exec(raw))) { out.push(`<b>${inline(m[1].replace(/^[#\s]+|[#\s]+$/g, ''))}</b>`); continue; }
+    if ((m = /^(\s*)[-*+]\s+(.*)$/.exec(raw))) { out.push(`${' '.repeat(Math.min(m[1].length, 4))}• ${inline(m[2])}`); continue; }
+    if (raw.trim().startsWith('|') && raw.trim().endsWith('|')) {
+      out.push(inline(raw.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()).filter(Boolean).join(' · ')));
+      continue;
+    }
+    out.push(inline(raw));
+  }
+  if (fence) out.push(`<pre>${esc(fence.join('\n'))}</pre>`);
+  flush();
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+export const plainText = (text) => tapify(String(text)
+  .replace(/```\w*\n?/g, '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/`([^`\n]+)`/g, '$1')
+  .replace(/^\s*#{1,6}\s+/gm, '').replace(/^(\s*)[-*+]\s+/gm, '$1• ')).trim();
+
+export function chunks(text, limit = 3500) {
+  const parts = [];
+  let cur = '';
+  let inFence = false;
+  for (const block of String(text).split(/(\n\s*\n)/)) {
+    if ((block.match(/```/g) || []).length % 2) inFence = !inFence;
+    if (cur && cur.length + block.length > limit && !inFence) { parts.push(cur); cur = ''; }
+    cur += block;
+    while (cur.length > limit + 500) {
+      let cut = cur.lastIndexOf('\n', limit);
+      if (cut < limit / 2) cut = limit;
+      parts.push(cur.slice(0, cut));
+      cur = cur.slice(cut);
+    }
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts.map(p => p.replace(/^\n+|\n+$/g, '')).filter(p => p.trim());
+}
 
 // ---------------------------------------------------------------- Telegram
 const tgBase = (env) => env.TELEGRAM_API || 'https://api.telegram.org';
@@ -47,10 +136,16 @@ async function tg(env, method, body = {}) {
   return data.result;
 }
 
+// Every message is light Markdown, sent as Telegram HTML; if Telegram can't parse the markup, it goes out plain.
 async function reply(env, chat, body, extra = {}) {
-  const all = String(body);
-  for (let i = 0; i < all.length || i === 0; i += 4000) {
-    await tg(env, 'sendMessage', { chat_id: chat, text: all.slice(i, i + 4000), disable_web_page_preview: true, ...extra });
+  for (const part of chunks(body)) {
+    const base = { chat_id: chat, link_preview_options: { is_disabled: true }, ...extra };
+    try {
+      await tg(env, 'sendMessage', { ...base, text: toHtml(part), parse_mode: 'HTML' });
+    } catch (error) {
+      if (!/parse entities|can't find end|unsupported start tag/i.test(String(error))) throw error;
+      await tg(env, 'sendMessage', { ...base, text: plainText(part) });
+    }
   }
 }
 
@@ -86,6 +181,13 @@ const pad = (n) => String(n).padStart(2, '0');
 // "Local" dates are Date objects shifted by the owner's offset and read with getUTC*.
 const localNow = (off) => new Date(Date.now() + off * 60000);
 const fmtLocal = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "2026-09-25 09:00" -> "Fri 25 Sep, 09:00"
+const niceLocal = (s) => {
+  const d = parseLocal(s);
+  return d ? `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}, ${s.slice(11)}` : s || '';
+};
 const parseLocal = (s) => {
   const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d)$/.exec(s || '');
   return m ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5])) : null;
@@ -231,7 +333,7 @@ async function dispatchRun(env, id) {
     await env.DB.prepare("UPDATE runs SET status='failed',error=?,updated_at=? WHERE id=?")
       .bind(String(error), now(), id).run();
     if (jobId) await touchJob(env, jobId, "status='failed'", []);
-    await reply(env, chatId, `❌ Cloud task could not start: ${error.message || error}`);
+    await reply(env, chatId, `❌ **${jobId ? `#${jobId} ` : ''}couldn’t start in the cloud**\n${error.message || error}`);
   }
 }
 
@@ -367,7 +469,12 @@ async function geminiWatch(env, runRow) {
     await touchJob(env, item.id, "status='done',summary=?,breakdown=?", [summary, breakdown.slice(0, 60000)]);
     await env.DB.prepare("UPDATE runs SET status='done',updated_at=? WHERE id=?").bind(now(), runRow.id).run();
     const tools = sectionOf(notes, 'Tools, links and repos');
-    await reply(env, runRow.chat_id, `#${item.id} 🎬 ${summary}${tools ? `\n\n${tools.slice(0, 1500)}` : ''}\n\n/r ${item.id} full · /plan ${item.id} · /save ${item.id}`);
+    const n = item.id;
+    await reply(env, runRow.chat_id, [
+      `🎬 **#${n} · ${summary}**`,
+      tools ? `\n**Tools, links and repos**\n${tools.slice(0, 1200)}` : '',
+      `\n**Next**\n/plan ${n}  plan it  ·  /build ${n}  build it\n/save ${n}  keep  ·  /dismiss ${n}  skip  ·  /r ${n} full  all notes`,
+    ].filter(Boolean).join('\n'));
   } finally {
     for (const u of uploaded) await gemini(env, 'DELETE', `${gemBase(env)}/v1beta/${u.name}`).catch(() => {});
   }
@@ -389,7 +496,7 @@ async function processGeminiRuns(env) {
       // Fall back to a routine run: it downloads with yt-dlp and has a local transcriber.
       await env.DB.prepare("UPDATE runs SET status='failed',error=?,updated_at=? WHERE id=?")
         .bind(String(error).slice(0, 1000), now(), item.id).run();
-      await reply(env, item.chat_id, `⚠️ #${item.job_id} quick watch failed (${String(error.message || error).slice(0, 200)}). Trying the slower Claude watcher…`);
+      await reply(env, item.chat_id, `⚠️ **#${item.job_id}: the quick watch failed**\n\`${String(error.message || error).slice(0, 200).replace(/`/g, "'")}\`\nTrying the slower Claude watcher…`);
       await startRun(env, 'watch', item.job_id, item.chat_id);
     }
   }
@@ -425,7 +532,9 @@ async function handleMedia(env, ctx, chat, message, raw) {
     const dup = await env.DB.prepare("SELECT id,status,summary FROM jobs WHERE source=? AND status NOT IN ('failed','interrupted') ORDER BY id DESC LIMIT 1")
       .bind(JSON.stringify(source)).first();
     if (dup) {
-      await reply(env, chat, dup.status === 'done' ? `Already watched that one, it's #${dup.id}: ${dup.summary}\n/r ${dup.id}` : `#${dup.id} is still being watched.`);
+      await reply(env, chat, dup.status === 'done'
+        ? `♻️ **Already watched that one: #${dup.id}**\n${dup.summary}\n\n/r ${dup.id}  see it again`
+        : `⏳ #${dup.id} is still being watched.`);
       return true;
     }
   }
@@ -434,7 +543,7 @@ async function handleMedia(env, ctx, chat, message, raw) {
   if (quick) await startRun(env, 'gwatch', id, chat);
   else ctx.waitUntil(startRun(env, 'watch', id, chat));
   await tg(env, 'setMessageReaction', { chat_id: chat, message_id: message.message_id, reaction: [{ type: 'emoji', emoji: '👀' }] }).catch(() => {});
-  await reply(env, chat, `#${id} watching it in the cloud…`);
+  await reply(env, chat, `👀 #${id} watching it in the cloud…`);
   return true;
 }
 
@@ -455,21 +564,25 @@ async function handleTelegram(request, env, ctx) {
     if (!raw.startsWith('/') && await handleMedia(env, ctx, chat, message, raw)) return text('ok');
     await handleCommand(env, ctx, chat, raw);
   } catch (error) {
-    await reply(env, chat, `I could not process that message: ${error.message || error}`).catch(() => {});
+    await reply(env, chat, `⚠️ **I couldn’t handle that message**\n${error.message || error}`).catch(() => {});
   }
   return text('ok');
 }
 
 function jobLine(x) {
-  return `#${x.id} (${x.status}${x.origin === 'cloud' ? ', cloud' : ''}) ${(x.summary || x.note || '').slice(0, 90)}`;
+  const status = x.status === 'done' ? '' : ` · *${x.status}*`;
+  return `• **#${x.id}** ${(x.summary || x.note || '').slice(0, 70)}${status}  /r ${x.id}`;
 }
 
 async function listReminders(env) {
   const rows = await env.DB.prepare("SELECT * FROM reminders WHERE status='open' ORDER BY due_local IS NULL, due_local LIMIT 30").all();
-  return rows.results.map(x => `${x.rid} ${x.due_local ? `(${x.due_local}${x.every ? `, every ${x.every}` : ''})` : '(to-do)'} ${x.text}`).join('\n') || 'Nothing on the list.';
+  if (!rows.results.length) return '⏰ Nothing on your list.';
+  return ['⏰ **Reminders and to-dos**', ...rows.results.map(x => `• **${x.rid}** ${x.text}\n   ${x.due_local
+    ? `${niceLocal(x.due_local)}${x.every ? `, every ${x.every}` : ''}` : 'to-do'}`)].join('\n');
 }
 
 export async function handleCommand(env, ctx, chat, raw) {
+  raw = commandWords(raw); // a tapped "/plan_4" means "/plan 4"
   let match = raw.match(/^\/(\w+)(?:@\w+)?(?:\s+([\s\S]*))?$/);
   // Old reply shortcuts: "4 1" = /plan 4, "4 2" = /save 4.
   const shortcut = raw.match(/^#?(\d+)\s+([12])$/);
@@ -481,123 +594,138 @@ export async function handleCommand(env, ctx, chat, raw) {
 
   if (!cmd) {
     ctx.waitUntil(startRun(env, 'command', null, chat, raw));
-    return reply(env, chat, 'I’m handling that in the cloud…');
+    return reply(env, chat, '🤖 On it, in the cloud…');
   }
   if (['start', 'help', 'menu'].includes(cmd)) return reply(env, chat, HELP);
   if (cmd === 'pc') {
     const mode = await getState(env, 'mode');
     const since = await getState(env, 'mode_since');
     return reply(env, chat, mode === 'cloud'
-      ? `☁️ Cloud mode since ${since ? fmtLocal(new Date(Date.parse(since) + off * 60000)) : '?'}: your PC bot isn't answering. Start it and it takes over again by itself.`
-      : '🖥 PC mode: your PC bot is handling messages.');
+      ? `☁️ **Cloud mode** since ${since ? niceLocal(fmtLocal(new Date(Date.parse(since) + off * 60000))) : '?'}\nYour PC bot isn’t answering. Start it and it takes over by itself.`
+      : '🖥 **PC mode**\nYour PC bot is handling messages.');
   }
-  if (PC_ONLY.has(cmd)) return reply(env, chat, `/${cmd} only works on the PC bot. It comes back when your PC does (/pc).`);
+  if (PC_ONLY.has(cmd)) return reply(env, chat, `🖥 **/${cmd} needs your PC**\nIt works again as soon as the PC bot is back. /pc shows who has the bot.`);
   if (cmd === 'jobs' || cmd === 'saved') {
     const rows = await env.DB.prepare(`SELECT id,status,summary,note,origin FROM jobs ${cmd === 'saved' ? "WHERE status='saved'" : ''} ORDER BY id DESC LIMIT 15`).all();
-    return reply(env, chat, rows.results.map(jobLine).join('\n') || 'No reels yet.');
+    if (!rows.results.length) return reply(env, chat, cmd === 'saved' ? '💾 Nothing saved yet.' : '📚 No reels yet. Send me one!');
+    return reply(env, chat, [cmd === 'saved' ? '💾 **Saved reels**' : '📚 **Your reels**', ...rows.results.map(jobLine)].join('\n'));
   }
   if (cmd === 'r') {
     const item = await job(env, n);
-    if (!item) return reply(env, chat, 'Reel not found. /jobs');
+    if (!item) return reply(env, chat, `🤷 No reel #${n}. /jobs lists them.`);
     const body = item.breakdown || item.result || item.note || item.status;
     if (/\bfull\b/i.test(arg) || body.length > 3500) {
       await sendFile(env, chat, `reel-${n}-breakdown.md`, body + (item.plan ? `\n\n---\n\n# Plan\n\n${item.plan}` : ''), `#${n} ${item.summary}`.slice(0, 900));
       return;
     }
-    return reply(env, chat, `#${n} ${item.summary}\n\n${body}${item.branch_url ? `\n\n${item.branch_url}` : ''}`);
+    return reply(env, chat, `🎬 **#${n} · ${item.summary}**\n\n${body.replace(/^# .*\n+/, '')}${item.branch_url ? `\n\n🔗 ${item.branch_url}` : ''}`
+      + `\n\n**Next**\n/plan ${n}  plan it  ·  /save ${n}  keep  ·  /deeper ${n}  research it`);
   }
   if (cmd === 'find') {
     const words = arg.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
-    if (!words.length) return reply(env, chat, 'Use /find words.');
+    if (!words.length) return reply(env, chat, '🔎 What should I look for? For example `/find mcp`');
     const where = words.map(() => "(lower(summary||' '||breakdown||' '||tags||' '||note) LIKE ?)").join(' AND ');
     const rows = await env.DB.prepare(`SELECT id,status,summary,note,origin FROM jobs WHERE ${where} ORDER BY id DESC LIMIT 10`)
       .bind(...words.map(w => `%${w.replace(/^#/, '')}%`)).all();
-    return reply(env, chat, rows.results.map(jobLine).join('\n') || 'Nothing found.');
+    return reply(env, chat, rows.results.length ? [`🔎 **Found for “${arg}”**`, ...rows.results.map(jobLine)].join('\n')
+      : `🔎 Nothing found for “${arg}”.`);
   }
   if (cmd === 'new') {
-    if (!arg) return reply(env, chat, 'Use /new <idea>.');
+    if (!arg) return reply(env, chat, '💡 Tell me the idea, for example `/new a script that renames my screenshots`');
     const id = await insertJob(env, { chat, source: JSON.stringify({ idea: arg }), note: arg, status: 'done', summary: `idea: ${arg.split('\n')[0].slice(0, 160)}` });
     await touchJob(env, id, 'breakdown=?,tags=?', [`# Idea #${id} (typed by the user)\n\n${arg}\n`, 'idea']);
-    return reply(env, chat, `#${id} saved. /plan ${id} to plan it`);
+    return reply(env, chat, `💡 **Idea #${id} saved**\n${arg.slice(0, 300)}\n\n**Next**\n/plan ${id}  plan it  ·  /build ${id}  build it`);
+  }
+  if (cmd === 'deeper') {
+    const item = await job(env, n);
+    if (!item) return reply(env, chat, `🤷 No reel #${n}. /jobs lists them.`);
+    ctx.waitUntil(startRun(env, 'command', n, chat, `/deeper ${n}: research reel #${n}. Find the repo or docs, check it is real, the cost and better alternatives. Reply with one short card.`));
+    return reply(env, chat, `🔎 Researching #${n} in the cloud…`);
   }
   if (['plan', 'build', 'resume', 'retry', 'rewatch'].includes(cmd)) {
     const item = await job(env, n);
-    if (!item) return reply(env, chat, 'Reel not found. /jobs');
+    if (!item) return reply(env, chat, `🤷 No reel #${n}. /jobs lists them.`);
     const action = ['retry', 'rewatch'].includes(cmd) ? 'watch' : cmd === 'resume' ? 'build' : cmd;
     ctx.waitUntil(startRun(env, action, n, chat, arg.slice(String(n).length).trim()));
-    return reply(env, chat, `${action === 'plan' ? '📋 Planning' : action === 'watch' ? '🎬 Watching' : '🛠 Building'} #${n} in the cloud…`);
+    return reply(env, chat, `${action === 'plan' ? '📋 Planning' : action === 'watch' ? '👀 Watching' : '🛠 Building'} #${n} in the cloud… I’ll message you when it’s ready.`);
   }
   if (cmd === 'pending' || cmd === 'tasks') {
     const rows = await env.DB.prepare(`SELECT job_id,action,status FROM runs WHERE status IN ${ACTIVE_RUN} ORDER BY created_at DESC LIMIT 15`).all();
     const pending = await env.DB.prepare("SELECT r.job_id,a.command FROM approvals a JOIN runs r ON a.run_id=r.id WHERE a.decision='pending' ORDER BY a.created_at LIMIT 10").all();
+    const running = rows.results.map(x => `• **#${x.job_id || '?'}** ${x.action === 'gwatch' ? 'watch' : x.action} · *${x.status}*`);
+    const waiting = pending.results.map(x => `**#${x.job_id} wants to run**\n\`\`\`\n${x.command.slice(0, 300)}\n\`\`\`\n/yes ${x.job_id}  allow  ·  /no ${x.job_id}  deny`);
     return reply(env, chat, [
-      rows.results.map(x => `#${x.job_id || '?'} ${x.action === 'gwatch' ? 'watch' : x.action}: ${x.status}`).join('\n'),
-      pending.results.map(x => `🔐 #${x.job_id} ${x.command.slice(0, 140)}\n/yes ${x.job_id} · /no ${x.job_id}`).join('\n'),
-    ].filter(Boolean).join('\n\n') || 'Nothing running or waiting.');
+      running.length ? `⏳ **Running in the cloud**\n${running.join('\n')}` : '',
+      waiting.length ? `🔐 **Waiting for you**\n${waiting.join('\n\n')}` : '',
+    ].filter(Boolean).join('\n\n') || '✨ Nothing running or waiting.');
   }
   if (cmd === 'yes' || cmd === 'no') {
     const pending = await env.DB.prepare("SELECT a.id FROM approvals a JOIN runs r ON a.run_id=r.id WHERE r.job_id=? AND r.status='started' AND a.decision='pending' ORDER BY a.created_at LIMIT 1").bind(n).first();
-    if (!pending) return reply(env, chat, `Nothing waiting for #${n}.`);
+    if (!pending) return reply(env, chat, `🤷 Nothing is waiting for an answer on #${n}.`);
     await env.DB.prepare("UPDATE approvals SET decision=?,decided_at=? WHERE id=? AND decision='pending'").bind(cmd, now(), pending.id).run();
-    return reply(env, chat, `${cmd === 'yes' ? 'Approved' : 'Denied'} one command for #${n}.`);
+    return reply(env, chat, cmd === 'yes' ? `✅ Allowed. #${n} carries on.` : `🚫 Denied. #${n} will work around it.`);
   }
   if (cmd === 'peek') {
     const item = await job(env, n);
     const latest = await env.DB.prepare('SELECT * FROM runs WHERE job_id=? ORDER BY created_at DESC LIMIT 1').bind(n).first();
-    return reply(env, chat, item ? `#${n} ${item.status}\n${item.result || item.summary}\n${item.branch_url || latest?.session_url || ''}` : 'Reel not found.');
+    if (!item) return reply(env, chat, `🤷 No reel #${n}. /jobs lists them.`);
+    const link = item.branch_url || latest?.session_url || '';
+    return reply(env, chat, `👀 **#${n}** · *${item.status}*\n${item.result || item.summary}${link ? `\n🔗 ${link}` : ''}`);
   }
   if (cmd === 'save' || cmd === 'dismiss') {
-    if (!await job(env, n)) return reply(env, chat, 'Reel not found. /jobs');
+    if (!await job(env, n)) return reply(env, chat, `🤷 No reel #${n}. /jobs lists them.`);
     await touchJob(env, n, 'status=?', [cmd === 'save' ? 'saved' : 'dismissed']);
-    return reply(env, chat, `#${n} ${cmd === 'save' ? 'saved' : 'dismissed'}.`);
+    return reply(env, chat, cmd === 'save' ? `💾 #${n} saved for later. /saved lists them.` : `🗑 #${n} dismissed.`);
   }
   if (cmd === 'stop') {
     await env.DB.prepare(`UPDATE runs SET status='stop-requested',updated_at=? WHERE job_id=? AND status IN ${ACTIVE_RUN}`).bind(now(), n).run();
     await env.DB.prepare("UPDATE approvals SET decision='no',decided_at=? WHERE decision='pending' AND run_id IN (SELECT id FROM runs WHERE job_id=? AND status='stop-requested')")
       .bind(now(), n).run();
-    return reply(env, chat, `Stop requested for #${n}. The cloud session stops at its next check.`);
+    return reply(env, chat, `⏹ Stopping #${n}. The cloud session stops at its next check.`);
   }
   if (cmd === 'remind' || (cmd === 'todo' && arg)) {
     const nowLocal = localNow(off);
     const parsed = cmd === 'remind' ? splitReminder(arg, nowLocal) : { what: arg, when: null, every: null };
-    if (!parsed || !parsed.what) return reply(env, chat, 'I couldn’t read the time. Try /remind tomorrow 9:00 call the bank, /remind in 2h …, /remind friday evening …');
+    if (!parsed || !parsed.what) return reply(env, chat, '⏰ I couldn’t read the time. For example:\n`/remind tomorrow 9:00 call the bank`\n`/remind in 2h check the oven`\n`/remind friday evening renew the domain`');
     const rid = await nextReminderId(env);
     const dueLocal = parsed.when ? fmtLocal(parsed.when) : null;
     await env.DB.prepare("INSERT INTO reminders(rid,text,every,due_local,due_utc,status,origin,changed,source,updated_at) VALUES(?,?,?,?,?,'open','cloud',1,'telegram',?)")
       .bind(rid, parsed.what, parsed.every, dueLocal, dueLocal ? localToUtc(dueLocal, off) : null, now()).run();
-    return reply(env, chat, `OK ${rid} ${dueLocal ? `(${dueLocal}${parsed.every ? `, every ${parsed.every}` : ''})` : '(to-do)'} ${parsed.what}`);
+    return reply(env, chat, dueLocal
+      ? `⏰ **${rid} set** · ${niceLocal(dueLocal)}${parsed.every ? `, every ${parsed.every}` : ''}\n${parsed.what}`
+      : `📝 **${rid} added to your to-dos**\n${parsed.what}`);
   }
   if (cmd === 'reminders' || cmd === 'todo') return reply(env, chat, await listReminders(env));
   if (cmd === 'done' || cmd === 'snooze') {
     const rid = `R${safeInt(arg.split(/\s+/)[0].replace(/^r/i, ''))}`;
     const item = await env.DB.prepare('SELECT * FROM reminders WHERE rid=?').bind(rid).first();
-    if (!item) return reply(env, chat, `No reminder ${rid}. /reminders`);
+    if (!item) return reply(env, chat, `🤷 No reminder ${rid}. /reminders lists them.`);
     const nowLocal = localNow(off);
     if (cmd === 'snooze') {
       const when = parseWhen(arg.split(/\s+/).slice(1).join(' ') || '1h', nowLocal);
-      if (!when) return reply(env, chat, 'Use /snooze R3 1h, 30m, 2d or "tomorrow 9:00".');
+      if (!when) return reply(env, chat, '💤 For how long? For example `/snooze R3 1h`, `30m`, `2d` or `tomorrow 9:00`');
       const dueLocal = fmtLocal(when);
       await env.DB.prepare("UPDATE reminders SET due_local=?,due_utc=?,sent_due=NULL,status='open',changed=1,updated_at=? WHERE rid=?")
         .bind(dueLocal, localToUtc(dueLocal, off), now(), rid).run();
-      return reply(env, chat, `OK ${rid} snoozed to ${dueLocal}`);
+      return reply(env, chat, `💤 **${rid} snoozed** to ${niceLocal(dueLocal)}\n${item.text}`);
     }
     const next = item.every && item.due_local
       ? (item.due_local > fmtLocal(nowLocal) ? item.due_local : nextTime(item.due_local, item.every, nowLocal)) : null;
     if (next) {
       await env.DB.prepare('UPDATE reminders SET due_local=?,due_utc=?,sent_due=NULL,changed=1,updated_at=? WHERE rid=?')
         .bind(next, localToUtc(next, off), now(), rid).run();
-      return reply(env, chat, `OK ${rid} done for now; next time ${next}`);
+      return reply(env, chat, `✅ **${rid} done** for now · next one ${niceLocal(next)}`);
     }
     await env.DB.prepare("UPDATE reminders SET status='done',changed=1,updated_at=? WHERE rid=?").bind(now(), rid).run();
-    return reply(env, chat, `OK ${rid} done: ${item.text}`);
+    return reply(env, chat, `✅ **${rid} done**\n${item.text}`);
   }
   if (cmd === 'failover') {
-    if (!['on', 'off'].includes(arg)) return reply(env, chat, `Failover is ${(await getState(env, 'failover')) === 'off' ? 'off' : 'on'}. /failover on|off`);
+    if (!['on', 'off'].includes(arg)) return reply(env, chat, `☁️ Failover is **${(await getState(env, 'failover')) === 'off' ? 'off' : 'on'}**\n/failover on  cloud answers when the PC bot is off\n/failover off  never`);
     await setState(env, 'failover', arg);
-    return reply(env, chat, arg === 'on' ? '☁️ Failover on: the cloud answers when your PC bot is off.' : 'Failover off: the cloud will not take over the bot.');
+    return reply(env, chat, arg === 'on' ? '☁️ **Failover on**\nThe cloud answers whenever your PC bot is off.' : '🖥 **Failover off**\nThe cloud won’t take over the bot.');
   }
   ctx.waitUntil(startRun(env, 'command', null, chat, raw));
-  return reply(env, chat, 'I’m handling that in the cloud…');
+  return reply(env, chat, '🤖 On it, in the cloud…');
 }
 
 // ---------------------------------------------------------------- /backend/* (Claude cloud routine)
@@ -676,7 +804,7 @@ async function handleBackend(request, env, path) {
       await env.DB.prepare('INSERT INTO approvals(id,run_id,tool_use_id,command) VALUES(?,?,?,?)')
         .bind(id, active.id, tool_use_id, command).run();
       pending = await env.DB.prepare('SELECT * FROM approvals WHERE id=?').bind(id).first();
-      await reply(env, active.chat_id, `🔐 #${active.job_id} build wants to run:\n${command.slice(0, 2000)}\n\n/yes ${active.job_id} · /no ${active.job_id}`);
+      await reply(env, active.chat_id, `🔐 **#${active.job_id} build wants to run**\n\`\`\`\n${command.slice(0, 2000)}\n\`\`\`\n\n/yes ${active.job_id}  allow\n/no ${active.job_id}  deny`);
     }
     return json({ id: pending.id, decision: pending.decision });
   }
@@ -787,7 +915,7 @@ export async function watchdog(env) {
   if (await swapState(env, 'mode', 'cloud', 'pc')) {
     // The PC bot's plugin deleted our webhook when it started: it has the bot again.
     await setState(env, 'mode_since', now());
-    await reply(env, env.TELEGRAM_OWNER_ID, '🖥 Your PC bot is back and handling messages again.', { disable_notification: true }).catch(() => {});
+    await reply(env, env.TELEGRAM_OWNER_ID, '🖥 **Your PC bot is back**\nIt’s handling messages again and copies in what the cloud did.', { disable_notification: true }).catch(() => {});
   }
   if (!info.pending_update_count) return;
   // An update is waiting. A live poller collects it within seconds; look again before deciding.
@@ -797,7 +925,7 @@ export async function watchdog(env) {
   await tg(env, 'setWebhook', { url: hook, secret_token: env.TELEGRAM_WEBHOOK_SECRET, max_connections: 1, drop_pending_updates: false });
   if (await swapState(env, 'mode', 'pc', 'cloud')) {
     await setState(env, 'mode_since', now());
-    await reply(env, env.TELEGRAM_OWNER_ID, '☁️ Your PC bot isn’t answering, so the cloud took over. Reels, plans and builds run in the cloud until the PC bot starts again (/pc).', { disable_notification: true }).catch(() => {});
+    await reply(env, env.TELEGRAM_OWNER_ID, '☁️ **The cloud took over**\nYour PC bot isn’t answering, so I’m answering from the cloud until it starts again.\n\n/menu  what works here  ·  /pc  status', { disable_notification: true }).catch(() => {});
   }
 }
 
@@ -814,11 +942,11 @@ async function deliverReminders(env) {
     const claimed = await env.DB.prepare('UPDATE reminders SET sent_due=? WHERE rid=? AND (sent_due IS NULL OR sent_due!=?)')
       .bind(r.due_local, r.rid, r.due_local).run();
     if (!claimed.meta.changes) continue;
-    const late = Date.now() - Date.parse(r.due_utc) > 15 * 60000 ? ` (was due ${r.due_local})` : '';
-    let msg = `⏰ Reminder ${r.rid}${late}\n${r.text}`;
-    if (r.note) msg += `\n\n${r.note}`;
-    if (r.source) msg += `\n(from ${r.source})`;
-    msg += `\n\n/done ${r.rid} · /snooze ${r.rid} 1h · /snooze ${r.rid} tomorrow 9:00`;
+    const late = Date.now() - Date.parse(r.due_utc) > 15 * 60000 ? ` · was due ${niceLocal(r.due_local)}` : '';
+    let msg = `⏰ **Reminder ${r.rid}**${late}\n${r.text}`;
+    if (r.note) msg += `\n\n${r.note.split('\n').map(line => `> ${line}`).join('\n')}`;
+    if (r.source) msg += `\n*from ${r.source}*`;
+    msg += `\n\n/done ${r.rid}  done\n/snooze ${r.rid} 1h  in an hour\n/snooze ${r.rid} tomorrow  tomorrow at 9:00`;
     await reply(env, env.TELEGRAM_OWNER_ID, msg);
     if (r.every) {
       const next = nextTime(r.due_local, r.every, localNow(off));
@@ -840,7 +968,7 @@ async function expireUnregistered(env) {
       const latest = await env.DB.prepare('SELECT id FROM runs WHERE job_id=? ORDER BY rowid DESC LIMIT 1').bind(item.job_id).first();
       if (latest?.id === item.id) await touchJob(env, item.job_id, "status='failed'", []);
     }
-    await reply(env, item.chat_id, `❌ Cloud task ${item.job_id ? `#${item.job_id} ` : ''}did not connect within 10 minutes. Check ${item.session_url || 'the Claude routine'} and retry.`);
+    await reply(env, item.chat_id, `❌ **${item.job_id ? `#${item.job_id} ` : 'A cloud task '}didn’t start**\nThe Claude session never connected. Send the same command again${item.session_url ? `, or look at the session:\n🔗 ${item.session_url}` : '.'}`);
   }
 }
 

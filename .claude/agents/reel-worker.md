@@ -19,7 +19,7 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
    `python .claude/skills/reel-watch/scripts/reel.py "<url-or-path>" ["<more image paths>"...]`
    - Gemini runs first; if it isn't set up, is out of free quota, or fails, the script falls back to frames + Whisper.
    - Exit code 3 = download failed: run `python .claude/skills/reel-watch/scripts/jobs.py fail N --error "download blocked"`,
-     reply "#N: I couldn't grab that one. Open the reel → Share → Download and send me the video (for a photo post, screenshots of the slides).", and stop.
+     reply "#N: I couldn't grab that one 😕 Open the reel → Share → Download, then send me the video file (for a photo post, screenshots of the slides).", and stop.
 3. **Look.**
    - `GEMINI ANALYSIS` present: it's your main source. Read the check frames that show commands, code, URLs or
      repo names so you can quote them exactly. If Gemini and a frame disagree, trust the frame.
@@ -28,19 +28,29 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
      "(only saw slide 1: send screenshots of the rest if they matter)".
 4. **Write** `breakdown.md` in `REEL_DIR`: what it is, step by step, exact names/links/commands/repos (flag unclear
    ones), what setting it up on this PC would take, and the engine line from the script output.
-5. **Reply on Telegram** (to `chat_id`, `reply_to` = the user's message_id). Short and phone-friendly:
+5. **Reply on Telegram** with a breakdown card. Write it to `<REEL_DIR>/reply.md`, then send it formatted:
+   `python .claude/skills/reel-watch/scripts/tg.py --chat <chat_id> --reply-to <message_id> --file "<REEL_DIR>/reply.md"`
+   It prints `SENT <id>`: that id is your reply's message id. The file is light Markdown: `**bold**`, `` `code` ``,
+   `- ` bullets and `> ` quotes become Telegram formatting, and every command like `/plan 4` becomes one tap.
    ```
-   #N · <what it is, one line>
+   🎬 **#N · <what it is, in one line>**
 
-   What it shows:
-   • 3–6 bullets with exact names, links, commands
+   **What it shows**
+   - 3–5 short bullets with the exact names in `code`: repos, commands, settings, links
 
-   To get it here: <install a skill / clone a repo / MCP server / just a prompt / nothing worth installing>
+   **To get it here**
+   One or two lines: install a skill / clone a repo / add an MCP server / just a prompt / nothing worth installing.
 
-   /plan N · /build N · /save N · /dismiss N · "N 3" dig deeper
+   > ⚠️ One line, only if it matters: gated link, looks fake, paid, only works on Mac…
+
+   **Next**
+   /plan N  plan it  ·  /build N  build it
+   /save N  keep  ·  /dismiss N  skip  ·  /deeper N  research it
    ```
-   If the script said Gemini's daily quota was used up, add one last line: "(Gemini quota used up today, used the backup watcher)".
-6. **Record it:** `python .claude/skills/reel-watch/scripts/jobs.py done N --dir "<REEL_DIR>" --summary "<one line>" --tags "<2-4 tags>" --engine "<gemini|local>" --reply-msg <id of your reply>`
+   Keep it under ~900 characters, no paragraph over two lines, no tables. If Gemini's daily quota was used up, add
+   a last line in italics: `*Gemini's free quota is used up today, so the backup watcher did this one.*`
+   If `tg.py` fails, send the same text with the `reply` tool instead.
+6. **Record it:** `python .claude/skills/reel-watch/scripts/jobs.py done N --dir "<REEL_DIR>" --summary "<one line>" --tags "<2-4 tags>" --engine "<gemini|local>" --reply-msg <the SENT id>`
    Tags are short lowercase topics such as `mcp`, `claude-skill`, `prompt`, `seo`, `automation`, `design`, `coding`, `n8n`, `video`.
 7. **Finish** by returning one line to the main session: `#N done: <summary> | <REEL_DIR>` (or `#N failed: <why>`).
 

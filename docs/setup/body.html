@@ -384,24 +384,35 @@ Library: 0 reels · 0 builds<span class="tm">10:13</span></div>
       <div class="chat">
         <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
         <div class="msg out">instagram.com/reel/Dd…<span class="tm">10:20</span></div>
-        <div class="msg">#1 watching it…<span class="tm">10:20</span></div>
-        <div class="msg"><b>#1 · A Claude skill that writes release notes</b>
+        <div class="msg"><tg-md>👀 #1 watching it…</tg-md><span class="tm">10:20</span></div>
+        <div class="msg"><tg-md>
+          🎬 **#1 · A Claude skill that writes release notes**
 
-What it shows:
-• A SKILL.md with the prompt shown on screen
-• The repo name, read from the video
+          **What it shows**
+          - A `SKILL.md` with the prompt shown on screen
+          - The repo, read from the video: `acme/release-notes`
 
-To get it here: install a Claude skill.
+          **To get it here**
+          Install a Claude skill: one folder, nothing else.
 
-<span class="cmd">/plan 1</span> · <span class="cmd">/build 1</span> · <span class="cmd">/save 1</span><span class="tm">10:21</span></div>
-        <div class="msg out"><span class="cmd">/build 1 sonnet</span><span class="tm">10:22</span></div>
-        <div class="msg">🔐 #1 build wants to run:
-<code>git init</code>
+          **Next**
+          /plan 1  plan it  ·  /build 1  build it
+          /save 1  keep  ·  /dismiss 1  skip
+        </tg-md><span class="tm">10:21</span></div>
+        <div class="msg out"><tg-md>/build 1</tg-md><span class="tm">10:22</span></div>
+        <div class="msg"><tg-md>
+          🔐 **#1 build wants to run**
+          ```
+          git init
+          ```
 
-<span class="cmd">/yes 1</span> · <span class="cmd">/no 1</span> · <span class="cmd">/always 1</span><span class="tm">10:23</span></div>
-        <div class="msg out"><span class="cmd">/yes 1</span><span class="tm">10:23</span></div>
+          /yes 1  allow
+          /no 1  deny
+          /always 1  always allow `git` here
+        </tg-md><span class="tm">10:23</span></div>
+        <div class="msg out"><tg-md>/yes 1</tg-md><span class="tm">10:23</span></div>
       </div>
-      <div class="figure"><div class="cap"><b>Figure 3.</b> Watch, then build. Every command waits for your answer.</div></div>
+      <div class="figure"><div class="cap"><b>Figure 3.</b> Watch, then build. Tap a blue command instead of typing it; every shell command waits for your answer.</div></div>
     </div>
   </div>
   <div class="note"><span class="label">Every command</span><p>Type <b>/</b> in the chat for the full menu, or send <span class="cmd">/manual</span> to get the complete manual on your phone.</p></div>
@@ -584,16 +595,23 @@ npm run deploy</pre><p class="muted">Put the address it prints in <code>PUBLIC_U
         <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
         <div class="msg out">🎞 Video · 0:42
 this MCP thing looks useful<span class="tm">22:41</span></div>
-        <div class="msg">☁️ Your PC bot isn’t answering, so the cloud took over. Reels, plans and builds run in the cloud until the PC bot starts again (<span class="cmd">/pc</span>).<span class="tm">22:42</span></div>
-        <div class="msg"><b>#7 🎬 An MCP server that lets Claude read your open browser tabs</b>
+        <div class="msg"><tg-md>
+          ☁️ **The cloud took over**
+          Your PC bot isn’t answering, so I’m answering from the cloud until it starts again.
+        </tg-md><span class="tm">22:42</span></div>
+        <div class="msg"><tg-md>
+          🎬 **#7 · An MCP server that lets Claude read your open browser tabs**
 
-• Repo: <code>example/tab-mcp</code>
-• Install: <code>npx tab-mcp init</code>
+          **Tools, links and repos**
+          - Repo: `example/tab-mcp`
 
-<span class="cmd">/r 7 full</span> · <span class="cmd">/plan 7</span> · <span class="cmd">/save 7</span><span class="tm">22:43</span></div>
-        <div class="msg out"><span class="cmd">/remind tomorrow 9:00 try #7</span><span class="tm">22:44</span></div>
-        <div class="msg">OK R6 (2026-09-25 09:00) try #7<span class="tm">22:44</span></div>
-        <div class="msg">🖥 Your PC bot is back and handling messages again.<span class="tm">08:12</span></div>
+          **Next**
+          /plan 7  plan it  ·  /save 7  keep
+        </tg-md><span class="tm">22:43</span></div>
+        <div class="msg out"><tg-md>/remind tomorrow 9:00 try #7</tg-md><span class="tm">22:44</span></div>
+        <div class="msg"><tg-md>⏰ **R6 set** · Fri 25 Sep, 09:00
+try #7</tg-md><span class="tm">22:44</span></div>
+        <div class="msg"><tg-md>🖥 **Your PC bot is back**</tg-md><span class="tm">08:12</span></div>
       </div>
       <div class="figure"><div class="cap"><b>Figure 5.</b> The PC is off at night: the cloud answers, watches the video and books the reminder. In the morning the PC takes over again.</div></div>
       <div class="note"><span class="label">Test it</span><p>Close the bot window and send <span class="cmd">/pc</span>. Within about two minutes the cloud answers. Start the bot again and it takes over.</p></div>
