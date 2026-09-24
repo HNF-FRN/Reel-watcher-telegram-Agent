@@ -23,6 +23,7 @@ async function outbound(request) {
     if (method === 'getWebhookInfo') {
       const info = { url: fake.webhook, pending_update_count: fake.pending };
       if (fake.pendingAfter !== null) { fake.pending = fake.pendingAfter; fake.pendingAfter = null; }
+      if (fake.pendingSeq?.length) fake.pending = fake.pendingSeq.shift();
       return ok(info);
     }
     if (method === 'setWebhook') { fake.webhook = params.url; fake.webhookParams = params; return ok(true); }
@@ -61,7 +62,7 @@ before(async () => {
     bindings: {
       TELEGRAM_BOT_TOKEN: BOT, TELEGRAM_OWNER_ID: String(OWNER), TELEGRAM_WEBHOOK_SECRET: 'hook-secret',
       BACKEND_TOKEN: 'backend-secret', GEMINI_API_KEY: 'gem-key', PUBLIC_URL: 'https://reel.example.workers.dev',
-      TELEGRAM_API: 'https://tg.test', GEMINI_API: 'https://gem.test', WATCHDOG_RECHECK_MS: '10',
+      TELEGRAM_API: 'https://tg.test', GEMINI_API: 'https://gem.test', WATCHDOG_RECHECK_MS: '10', WATCHDOG_CONFIRM_MS: '10',
       ALBUM_SETTLE_MS: '0', GEMINI_POLL_MS: '1', GEMINI_RETRY_MS: '1',
       CLAUDE_ROUTINE_URL: 'https://api.anthropic.com/v1/claude_code/routines/trig_test/fire', CLAUDE_ROUTINE_TOKEN: 't',
     },
@@ -76,7 +77,7 @@ beforeEach(async () => {
   await db.batch(['updates', 'jobs', 'runs', 'approvals', 'reminders', 'state'].map(t => db.prepare(`DROP TABLE IF EXISTS ${t}`)));
   const statements = schema.replace(/--.*$/gm, '').split(';').map(s => s.trim()).filter(Boolean);
   await db.batch(statements.map(s => db.prepare(s)));
-  Object.assign(fake, { webhook: '', pending: 0, pendingAfter: null, sent: [], calls: [], fires: [] });
+  Object.assign(fake, { webhook: '', pending: 0, pendingAfter: null, pendingSeq: [], sent: [], calls: [], fires: [] });
 });
 
 let updateId = 1;
@@ -149,6 +150,7 @@ test('watchdog takes over when updates sit unclaimed, and notices the PC coming 
   assert.equal(fake.webhookParams.drop_pending_updates, false);
   assert.equal(await state('mode'), 'cloud');
   assert.match(lastText(), /cloud took over/);
+  assert.ok(fake.sent.some(m => /Got your message/.test(m.text) && !m.disable_notification), 'audible heads-up first');
   const notices = fake.sent.length;
   await cron(); // still ours: no second notice
   assert.equal(fake.sent.length, notices);
@@ -338,4 +340,13 @@ test('markup Telegram rejects is resent as plain text', async () => {
   await telegram({ text: '/new FAILPARSE **idea**' });
   assert.equal(fake.sent.at(-1).parse_mode, undefined);
   assert.match(lastText(), /Idea #1 saved[\s\S]*\/plan_1/);
+});
+
+test('a heads-up goes out as soon as a message is stuck; a late PC pickup gets a never-mind', async () => {
+  fake.pending = 1; fake.pendingSeq = [1, 0]; // stuck at the confirm check, collected before the takeover
+  await cron();
+  assert.equal(fake.webhook, '');
+  const texts = fake.sent.map(m => m.text).join(' | ');
+  assert.match(texts, /Got your message/);
+  assert.match(texts, /Never mind, your PC bot just picked it up/);
 });
