@@ -57,6 +57,7 @@ MENU = [
     ("find", "words – search your reels"),
     ("saved", "Reels you saved for later"),
     ("new", "idea – plan/build something without a reel"),
+    ("deeper", "N – research a reel: is it real, cost, alternatives"),
     ("retry", "N – watch a reel again"),
     ("rewatch", "N [deep|local] – re-watch more carefully"),
     ("digest", "Weekly summary now"),
@@ -95,30 +96,33 @@ def build_digest():
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     recent = [j for j in jobs.values() if j["created"][:10] >= week_ago]
 
-    def rows(status, limit=10):
+    def rows(status, action, limit=10):
         items = sorted(((int(n), j) for n, j in jobs.items() if j["status"] == status), reverse=True)
-        return [f"• #{n} {(j.get('summary') or j['source'])[:80]}" for n, j in items[:limit]]
+        return [f"• #{n} {(j.get('summary') or j['source'])[:70]}  /{action} {n}" for n, j in items[:limit]]
 
     builds = []
+    next_step = {"plan-ready": "build", "question": "peek", "interrupted": "resume", "stopped": "resume", "done": "diff"}
     for d in sorted(BUILDS.glob("*-*")) if BUILDS.exists() else []:
         st = read_json(d / ".reel" / "state.json", {}) or {}
-        if st.get("status") in ("plan-ready", "question", "interrupted", "stopped", "done") and not st.get("deployed"):
-            builds.append(f"• #{st.get('job')} {st.get('kind')} {st.get('status')} ({st.get('model')})")
+        if st.get("status") in next_step and not st.get("deployed"):
+            builds.append(f"• #{st.get('job')} {st.get('kind')} {st.get('status')} · {st.get('model')}  "
+                          f"/{next_step[st['status']]} {st.get('job')}")
 
-    saved, waiting, broken = rows("saved"), rows("done"), rows("interrupted") + rows("failed", 5)
-    parts = [f"📬 Weekly reel digest: {len(recent)} reel{'s' if len(recent) != 1 else ''} this week"]
+    saved, waiting = rows("saved", "plan"), rows("done", "save")
+    broken = rows("interrupted", "retry") + rows("failed", "retry", 5)
+    parts = [f"📬 **Weekly reel digest** · {len(recent)} reel{'s' if len(recent) != 1 else ''} this week"]
     if saved:
-        parts.append("Saved, not built yet:\n" + "\n".join(saved))
+        parts.append("**Saved, not built yet**\n" + "\n".join(saved))
     if waiting:
-        parts.append("Watched, waiting for your answer:\n" + "\n".join(waiting))
+        parts.append("**Watched, waiting for your answer**\n" + "\n".join(waiting))
     if builds:
-        parts.append("Builds to look at:\n" + "\n".join(builds[:10]))
+        parts.append("**Builds to look at**\n" + "\n".join(builds[:10]))
     if broken:
-        parts.append("Didn't finish (/retry N):\n" + "\n".join(broken))
+        parts.append("**Didn't finish**\n" + "\n".join(broken))
     if not (saved or waiting or broken or builds):
         parts.append("Nothing waiting on you. 🎉")
     else:
-        parts.append("e.g. /plan 4 · /build 4 sonnet · /pending")
+        parts.append("*Tap a command to act on it. /pending shows everything waiting.*")
     return "\n\n".join(parts)
 
 

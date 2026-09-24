@@ -122,6 +122,9 @@ table.ref td:first-child .cmd { white-space: normal; }
 .msg .cmd { color: #2A7BB6; font-weight: 500; }
 .msg code { background: #F0F3F5; font-size: 7.4pt; }
 .msg.out .cmd { color: #3A7A25; }
+.msg b { font-weight: 600; }
+.msg pre { margin: .6mm 0 .2mm; padding: 1.3mm 2mm; background: #F0F3F5; border-radius: 1.2mm; font: 400 7.3pt/1.45 "Geist Mono", monospace; white-space: pre-wrap; color: var(--ink); }
+.msg blockquote { margin: .4mm 0 0; padding: .5mm 0 .5mm 2.2mm; border-left: .6mm solid #2A7BB6; background: rgba(42,123,182,.07); border-radius: 0 1mm 1mm 0; }
 
 /* ---------- misc ---------- */
 .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 3mm 0 5mm; border-top: .35mm solid var(--ink); break-inside: avoid; }

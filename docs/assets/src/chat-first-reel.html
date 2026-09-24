@@ -1,0 +1,39 @@
+<!-- README image: a reel, its breakdown card, a build and its first approval. Message blocks marked tg-md go through the bot's own
+     formatter (tgfmt.py) in render.py, so this is exactly what the bot sends. -->
+<style>
+  body { background: var(--paper); margin: 0; }
+  #shot { width: 363px; padding: 2px; background: var(--paper); }
+</style>
+<div id="shot">
+  <div class="chat">
+    <div class="bar"><div class="av">RA</div><div class="who">My Reel Agent<small>bot</small></div></div>
+    <div class="msg out">instagram.com/reel/Dd…<span class="tm">10:20</span></div>
+    <div class="msg"><tg-md>👀 #1 watching it…</tg-md><span class="tm">10:20</span></div>
+    <div class="msg"><tg-md>
+      🎬 **#1 · A Claude skill that writes release notes**
+
+      **What it shows**
+      - A `SKILL.md` with the prompt shown on screen
+      - The repo, read from the video: `acme/release-notes`
+
+      **To get it here**
+      Install a Claude skill: one folder, nothing else.
+
+      **Next**
+      /plan 1  plan it  ·  /build 1  build it
+      /save 1  keep  ·  /dismiss 1  skip
+    </tg-md><span class="tm">10:21</span></div>
+    <div class="msg out"><tg-md>/build 1</tg-md><span class="tm">10:22</span></div>
+    <div class="msg"><tg-md>
+      🔐 **#1 build wants to run**
+      ```
+      git init
+      ```
+
+      /yes 1  allow
+      /no 1  deny
+      /always 1  always allow `git` here
+    </tg-md><span class="tm">10:23</span></div>
+    <div class="msg out"><tg-md>/yes 1</tg-md><span class="tm">10:23</span></div>
+  </div>
+</div>

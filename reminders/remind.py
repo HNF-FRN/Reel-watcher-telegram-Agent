@@ -25,8 +25,6 @@ import re
 import subprocess
 import sys
 import time
-import urllib.parse
-import urllib.request
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -36,7 +34,6 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE / "reminders.json"
 VIEW = HERE / "REMINDERS.md"
 LOCK = HERE / ".reminders.lock"
-TG_DIR = Path.home() / ".claude" / "channels" / "telegram"
 TASK_PATH = "\\ClaudeReminders\\"
 OLD_POLL_TASK = "ClaudeReminders"  # the 5-minute poller this replaced
 NO_WINDOW = 0x08000000
@@ -156,26 +153,10 @@ def tg_send(text):
         with open(HERE / "dryrun.log", "a", encoding="utf-8") as f:
             f.write(f"--- {datetime.now():%H:%M:%S}\n{text}\n")
         return True
-    token = None
-    env = TG_DIR / ".env"
-    for row in env.read_text(encoding="utf-8").splitlines() if env.exists() else []:
-        k, _, v = row.partition("=")
-        if k.strip() == "TELEGRAM_BOT_TOKEN":
-            token = v.strip().strip('"')
-    try:
-        chats = json.loads((TG_DIR / "access.json").read_text(encoding="utf-8")).get("allowFrom", [])
-    except Exception:
-        chats = []
-    if not token or not chats:
-        return False
-    for chat in chats:
-        body = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode()
-        try:
-            urllib.request.urlopen(f"https://api.telegram.org/bot{token}/sendMessage", body, timeout=30).read()
-        except Exception as e:
-            print(f"telegram send failed: {e}", file=sys.stderr)
-            return False
-    return True
+    # The reel agent's sender formats the message (bold, one-tap commands) and reads the bot token itself.
+    sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
+    from common import tg_send as send  # noqa: PLC0415
+    return bool(send(text))
 
 
 def cloud_link():
@@ -370,13 +351,14 @@ def main():
                     if v.get("every"):
                         v.update(due=next_time(v["due"], v["every"]), sent=None)
                     continue
-                late = f" (was due {v['due']})" if now - due > timedelta(minutes=15) else ""
-                msg = f"⏰ Reminder {k}{late}\n{v['text']}"
+                late = f" · was due {v['due'][11:] if v['due'][:10] == now.strftime('%Y-%m-%d') else v['due']}" \
+                    if now - due > timedelta(minutes=15) else ""
+                msg = f"⏰ **Reminder {k}**{late}\n{v['text']}"
                 if v.get("note"):
-                    msg += f"\n\n{v['note']}"
+                    msg += "\n\n" + "\n".join(f"> {line}" for line in v["note"].splitlines())
                 if v.get("source"):
-                    msg += f"\n(from {v['source']})"
-                msg += f"\n\n/done {k} · /snooze {k} 1h · /snooze {k} tomorrow 9:00"
+                    msg += f"\n*from {v['source']}*"
+                msg += f"\n\n/done {k}  done\n/snooze {k} 1h  in an hour\n/snooze {k} tomorrow  tomorrow at 9:00"
                 if tg_send(msg):
                     v["sent"] = v["due"]
                     if v.get("every"):  # repeating: schedule the next one right away

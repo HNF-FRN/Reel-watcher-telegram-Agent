@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, test } from 'node:test';
 import { Miniflare } from 'miniflare';
-import { parseWhen, splitReminder, nextTime, sectionOf, pcToken } from './worker.mjs';
+import { parseWhen, splitReminder, nextTime, sectionOf, pcToken, toHtml, tapify, commandWords, chunks } from './worker.mjs';
 
 const BOT = '123:TEST';
 const OWNER = 42;
@@ -26,7 +26,12 @@ async function outbound(request) {
       return ok(info);
     }
     if (method === 'setWebhook') { fake.webhook = params.url; fake.webhookParams = params; return ok(true); }
-    if (method === 'sendMessage') { fake.sent.push(params); return ok({ message_id: 1 }); }
+    if (method === 'sendMessage') {
+      if (params.parse_mode === 'HTML' && params.text.includes('FAILPARSE'))
+        return Response.json({ ok: false, description: "Bad Request: can't parse entities: unexpected end tag" }, { status: 400 });
+      fake.sent.push(params);
+      return ok({ message_id: 1 });
+    }
     if (method === 'sendDocument') { fake.sent.push({ document: true }); return ok({}); }
     if (method === 'getFile') return ok({ file_path: `videos/${params.file_id}.mp4`, file_size: 4 });
     return ok(true);
@@ -168,9 +173,9 @@ test('PC sync sets job numbers; cloud jobs come back through /pc/changes and ack
   });
   assert.equal(sync.status, 200);
   await telegram({ text: '/new build a tiny CLI' });
-  assert.match(lastText(), /^#6 saved/);
+  assert.match(lastText(), /<b>Idea #6 saved<\/b>/);
   await telegram({ text: '/find mcp' });
-  assert.match(lastText(), /#3 \(saved\) Old reel/);
+  assert.match(lastText(), /<b>#3<\/b> Old reel about MCP · <i>saved<\/i>  \/r_3/);
   const changes = await (await pcCall('/pc/changes')).json();
   assert.deepEqual(changes.jobs.map(j => j.id), [6]);
   await pcCall('/pc/ack', { jobs: changes.jobs.map(j => ({ id: j.id, updated_at: j.updated_at })) });
@@ -183,12 +188,13 @@ test('PC sync sets job numbers; cloud jobs come back through /pc/changes and ack
 test('a Telegram video is watched by Gemini in the Worker, without a routine run', async () => {
   await pcCall('/pc/sync', { next_job: 10 });
   await telegram({ video: { file_id: 'vid1', mime_type: 'video/mp4' }, caption: 'look at this' });
-  assert.match(lastText(), /^#10 watching it in the cloud/);
+  assert.match(lastText(), /#10 watching it in the cloud/);
   await cron();
   const item = await db.prepare('SELECT * FROM jobs WHERE id=10').first();
   assert.equal(item.status, 'done');
   assert.equal(item.summary, 'A neat MCP trick');
-  assert.match(lastText(), /#10 🎬 A neat MCP trick[\s\S]*some\/repo[\s\S]*\/plan 10/);
+  assert.match(lastText(), /🎬 <b>#10 · A neat MCP trick<\/b>[\s\S]*<code>some\/repo<\/code>[\s\S]*\/plan_10  plan it/);
+  assert.equal(fake.sent.at(-1).parse_mode, 'HTML');
   assert.equal(fake.fires.length, 0);
   assert.ok(fake.calls.includes('gemini DELETE /v1beta/files/f1'));
   assert.match(JSON.stringify(fake.geminiBody), /look at this/);
@@ -222,7 +228,7 @@ test('/plan fires the routine with the run id', async () => {
 
 test('PC-only commands answer without spending a routine run', async () => {
   await telegram({ text: '/deploy 3' });
-  assert.match(lastText(), /only works on the PC bot/);
+  assert.match(lastText(), /needs your PC/);
   assert.equal(fake.fires.length, 0);
 });
 
@@ -230,7 +236,7 @@ test('PC-only commands answer without spending a routine run', async () => {
 test('/remind is parsed in the Worker in the owner time zone', async () => {
   await pcCall('/pc/sync', { tz_offset_min: 60, next_reminder: 5 });
   await telegram({ text: '/remind in 1h call the bank' });
-  assert.match(lastText(), /^OK R5 \(\d{4}-\d\d-\d\d \d\d:\d\d\) call the bank/);
+  assert.match(lastText(), /<b>R5 set<\/b> · \w{3} \d{1,2} \w{3}, \d\d:\d\d\ncall the bank/);
   const row = await db.prepare("SELECT * FROM reminders WHERE rid='R5'").first();
   assert.equal(Date.parse(row.due_utc) - Date.now() < 3700e3, true);
   assert.equal(row.changed, 1);
@@ -267,7 +273,7 @@ test('each reminder occurrence is sent once, by the PC or by the cloud', async (
 test('/done and /snooze in the cloud reach the PC as changes', async () => {
   await pcCall('/pc/sync', { tz_offset_min: 60, reminders: [{ rid: 'R4', text: 'water plants', due: '2030-01-01 09:00', status: 'open' }] });
   await telegram({ text: '/snooze R4 2h' });
-  assert.match(lastText(), /OK R4 snoozed to/);
+  assert.match(lastText(), /<b>R4 snoozed<\/b> to/);
   await telegram({ text: '/done r4' });
   const changes = await (await pcCall('/pc/changes')).json();
   assert.deepEqual(changes.reminders.map(r => [r.rid, r.status]), [['R4', 'done']]);
@@ -290,7 +296,7 @@ test('forwarded /yes from the PC bot approves a cloud build command', async () =
   await db.prepare("INSERT INTO approvals(id,run_id,tool_use_id,command) VALUES('a1','r1','t1','npm test')").run();
   await pcCall('/pc/command', { text: '/yes 1' });
   assert.equal((await db.prepare("SELECT decision FROM approvals WHERE id='a1'").first()).decision, 'yes');
-  assert.match(lastText(), /Approved one command for #1/);
+  assert.match(lastText(), /Allowed\. #1 carries on/);
 });
 
 test('a PC copy of a cloud job never replaces its source or live status', async () => {
@@ -299,4 +305,37 @@ test('a PC copy of a cloud job never replaces its source or live status', async 
   await pcCall('/pc/sync', { jobs: [{ id: 1, status: 'cloud-watching', summary: 's', source: 'https://www.instagram.com/reel/zzz/ (text)' }] });
   const after = await db.prepare('SELECT source,status FROM jobs WHERE id=1').first();
   assert.deepEqual(after, before);
+});
+
+// ------------------------------------------------------------ message formatting
+test('formatter matches the PC side (tgfmt.py)', () => {
+  assert.equal(tapify('/plan 5 · /build 5 · /save 5'), '/plan_5 · /build_5 · /save_5');
+  assert.equal(tapify('/snooze R3 1h or /done R3'), '/snooze_R3_1h or /done_R3');
+  assert.equal(tapify('/build 4 opus to redo'), '/build_4_opus to redo');
+  for (const t of ['/tell 4 <changes>', '/remind tomorrow 9:00 call', '/plan N', 'see /telegram:access pair'])
+    assert.equal(tapify(t), t);
+  assert.equal(commandWords('/snooze_R3_1h'), '/snooze R3 1h');
+  assert.equal(commandWords('/some_thing'), '/some_thing');
+  const out = toHtml('# Title\n**Bold** and *it* and `a<b>`\n- one\n  - two\n> quoted\n[docs](https://x.dev/a?b=1&c=2)\n/plan 4');
+  for (const part of ['<b>Title</b>', '<b>Bold</b>', '<i>it</i>', '<code>a&lt;b&gt;</code>', '• one\n  • two',
+    '<blockquote>quoted</blockquote>', '<a href="https://x.dev/a?b=1&amp;c=2">docs</a>', '/plan_4'])
+    assert.ok(out.includes(part), part);
+  assert.equal(toHtml('**a *b** c*'), '<b>a *b</b> c*');
+  assert.ok(toHtml('```\nnpm i **x** /plan 4\n```').startsWith('<pre>npm i **x** /plan 4</pre>'));
+  const long = Array.from({ length: 40 }, (_, i) => `Paragraph ${i} ` + 'word '.repeat(60)).join('\n\n');
+  assert.ok(chunks(long).length > 1 && chunks(long).every(c => toHtml(c).length < 4096));
+});
+
+test('a tapped command with underscores works like the typed one', async () => {
+  await telegram({ text: '/new tiny CLI' });
+  await telegram({ text: '/plan_1' });
+  assert.equal(fake.fires.at(-1).action, 'plan');
+  await telegram({ text: '/save_1' });
+  assert.match(lastText(), /#1 saved for later/);
+});
+
+test('markup Telegram rejects is resent as plain text', async () => {
+  await telegram({ text: '/new FAILPARSE **idea**' });
+  assert.equal(fake.sent.at(-1).parse_mode, undefined);
+  assert.match(lastText(), /Idea #1 saved[\s\S]*\/plan_1/);
 });
