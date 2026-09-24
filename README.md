@@ -165,11 +165,9 @@ Cloud mode is optional. It gives the same Telegram bot a stand-in on Cloudflare'
 
 ### What you get while the PC is off
 
-| | |
-|---|---|
-| **Answered in the cloud, free** | `/jobs` · `/r` · `/find` · `/new` · `/save` · `/remind` · `/todo` · `/reminders` · `/done` · `/snooze` · `/pc`, plus **videos, photos and YouTube links** you send (watched by Gemini) |
-| **One Claude routine run each** | Instagram / TikTok links, `/plan`, `/build` (approve with `/yes N`), and plain-text requests. Routines use your Claude plan and have a daily cap. |
-| **Waits for the PC** | `/tell`, `/diff`, `/deploy`, `/quota` and settings. The bot says so instead of spending a run. |
+- **Answered in the cloud, free:** videos, photos and YouTube links you send (watched by Gemini), plus `/jobs`, `/r`, `/find`, `/new`, `/save`, `/remind`, `/todo`, `/reminders`, `/done`, `/snooze` and `/pc`.
+- **One Claude routine run each:** Instagram and TikTok links, `/plan`, `/build` (approve with `/yes N`), and plain-text requests. Routines use your Claude plan and have a daily cap.
+- **Waits for the PC:** `/tell`, `/diff`, `/deploy`, `/quota` and settings. The bot says so instead of spending a run.
 
 **One library.** Reel and reminder numbers carry on from the PC's, so `/r 3` means the same reel on either side.
 
