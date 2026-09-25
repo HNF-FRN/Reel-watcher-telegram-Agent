@@ -22,6 +22,8 @@
   <a href="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/">Website</a>
 </p>
 
+<p align="center"><sub>Featured in <a href="https://github.com/slavakurilyak/awesome-ai-agents">awesome-ai-agents</a></sub></p>
+
 ---
 
 > **Saw an AI tool in a reel and thought "I should set that up"?** Forward the reel to your bot. It tells you what the video really shows, then builds it on your PC while you approve every step from your phone.
