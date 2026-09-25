@@ -8,3 +8,6 @@
 # Binary files
 *.png  binary
 *.pdf  binary
+
+# npx reel-agent runs on macOS/Linux too: a CRLF shebang would break it
+npm/** text eol=lf

@@ -1,0 +1,47 @@
+{
+  "name": "reel-agent",
+  "version": "1.0.0",
+  "description": "Send a reel to a Telegram bot: it tells you what the video shows, then builds it on your PC with Claude Code, asking before every command. One-command setup.",
+  "type": "module",
+  "bin": {
+    "reel-agent": "cli.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "py/reel.py",
+    "py/common.py",
+    "README.md"
+  ],
+  "scripts": {
+    "prepack": "node copy-py.mjs",
+    "test": "node --test test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "telegram-bot",
+    "claude-code",
+    "claude",
+    "gemini",
+    "instagram",
+    "reels",
+    "tiktok",
+    "youtube",
+    "video",
+    "ai-agent",
+    "automation",
+    "cli"
+  ],
+  "author": "HNF-FRN (https://github.com/HNF-FRN)",
+  "license": "MIT",
+  "homepage": "https://hnf-frn.github.io/Reel-watcher-telegram-Agent/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git",
+    "directory": "npm"
+  },
+  "bugs": {
+    "url": "https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues"
+  }
+}

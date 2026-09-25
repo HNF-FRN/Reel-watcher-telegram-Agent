@@ -52,32 +52,37 @@
 
 ## Quick start
 
-**You need:** Windows 10 or 11, a [Claude](https://claude.ai) Pro or Max plan, Telegram on your phone, and about 40 minutes. The full walkthrough, with screenshots of every step, is in the **[setup guide (PDF)](docs/Reel%20Agent%20Setup%20Guide.pdf)**.
+**You need:** Windows 10 or 11, a [Claude](https://claude.ai) Pro or Max plan, and Telegram on your phone. The full walkthrough, with screenshots of every step, is in the **[setup guide (PDF)](docs/Reel%20Agent%20Setup%20Guide.pdf)**.
 
 ```powershell
-# 1. Basics (skip what you have), then open a NEW PowerShell window
+winget install OpenJS.NodeJS.LTS     # skip if you have Node.js; then open a NEW PowerShell window
+npx reel-agent
+```
+
+That one command does the rest, asking before each change:
+
+1. **Tools:** installs Python, Git and Claude Code if they're missing, and signs you in to Claude.
+2. **Download:** gets Reel Agent into `~/reel-agent` (or updates it).
+3. **Guided setup:** your bot token from [@BotFather](https://t.me/BotFather) (`/newbot`), a Gemini key, packages, reminders and start-at-login.
+4. **Start and pair:** starts the bot, waits for your first Telegram message and approves your account from the code the bot sends you.
+
+Send `/menu` from your phone. That's it. Later, `npx reel-agent status`, `update` or `doctor` work from any terminal.
+
+<details>
+<summary>Prefer to do it by hand?</summary>
+
+```powershell
 winget install Python.Python.3.13 OpenJS.NodeJS.LTS Git.Git
 irm https://claude.ai/install.ps1 | iex          # Claude Code; run `claude` once to sign in
-
-# 2. Get the code
 git clone https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git reel-agent
 cd reel-agent
-
-# 3. Guided setup: checks everything, asks before each change, saves your bot token and Gemini key
-.\setup
-
-# 4. Start the bot (a window opens; keep it open)
-.\bot start
+.\setup                                           # guided setup
+.\bot start                                       # a window opens; keep it open
 ```
 
-Then create your bot with [@BotFather](https://t.me/BotFather) (`/newbot`) if setup hasn't asked you for the token yet. Message your bot, and it replies with a pairing code. In the bot window, type:
+Message your bot; it replies with a pairing code. In the bot window, type `/telegram:access pair <code>`, then `/telegram:access policy allowlist`.
 
-```
-/telegram:access pair <code>
-/telegram:access policy allowlist
-```
-
-Send `/menu` from your phone. That's it.
+</details>
 
 > [!TIP]
 > Add a free Gemini key from [Google AI Studio](https://aistudio.google.com/apikey) when setup asks for it. Breakdowns are much better with it: Gemini watches the whole video with sound.
@@ -90,6 +95,8 @@ The video watcher also works on its own, as a Claude Code plugin: no Telegram bo
 /plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent
 /plugin install reel-watch@reel-agent
 ```
+
+On OpenClaw: `openclaw skills install @hnf-frn/reel-watch` ([ClawHub](https://clawhub.ai/hnf-frn/skills/reel-watch)). Straight from a terminal, on any OS: `npx reel-agent watch <link>` prints Gemini's breakdown.
 
 Then `pip install yt-dlp imageio-ffmpeg` (plus `faster-whisper` for transcripts without Gemini), set `GEMINI_API_KEY` if you have one, and paste any reel, TikTok, YouTube or X link into Claude Code: *"what does this video show?"* Everything it saves goes to `reels/` in the current folder.
 
