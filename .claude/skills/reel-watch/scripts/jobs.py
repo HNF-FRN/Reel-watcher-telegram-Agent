@@ -20,47 +20,18 @@ import argparse
 import json
 import os
 import sys
-import time
-from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-REELS = Path(__file__).resolve().parents[4] / "reels"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import REELS, cloud_link, locked_json, now, utf8_stdio  # noqa: E402
+
 JOBS = REELS / "jobs.json"
 INDEX = REELS / "INDEX.md"
-LOCK = REELS / ".jobs.lock"
 
 
-@contextmanager
 def locked(write=True):
-    REELS.mkdir(exist_ok=True)
-    for _ in range(400):
-        try:
-            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            break
-        except FileExistsError:
-            try:
-                if time.time() - LOCK.stat().st_mtime > 30:  # stale lock from a crashed run
-                    LOCK.unlink(missing_ok=True)
-            except FileNotFoundError:
-                pass
-            time.sleep(0.05)
-    else:
-        sys.exit("could not lock reels/jobs.json")
-    try:
-        data = json.loads(JOBS.read_text(encoding="utf-8")) if JOBS.exists() else {"next": 1, "jobs": {}}
-        yield data
-        if write:
-            tmp = JOBS.with_suffix(".tmp")
-            tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(JOBS)
-    finally:
-        os.close(fd)
-        LOCK.unlink(missing_ok=True)
-
-
-def now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M")
+    return locked_json(JOBS, {"next": 1, "jobs": {}}, write)
 
 
 def get(data, n):
@@ -85,11 +56,7 @@ def line(n, j):
 
 
 def main():
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
+    utf8_stdio()
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("new"); p.add_argument("--source", required=True)
@@ -107,8 +74,6 @@ def main():
     p = sub.add_parser("idea"); p.add_argument("text"); p.add_argument("--chat")
     a = ap.parse_args()
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from common import cloud_link
     link = cloud_link()
     # A number this PC doesn't know may be a reel the cloud watched while the PC was off: fetch it first.
     if link and a.cmd in ("show", "set", "tag") and JOBS.exists():

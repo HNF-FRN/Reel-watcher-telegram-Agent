@@ -16,6 +16,9 @@ test("help and version", () => {
   const h = cli(["--help"]);
   assert.equal(h.status, 0);
   assert.match(h.stdout, /npx reel-agent watch <link>/);
+  const short = cli(["-h"]);  // short flags are flags, not a command named "-h"
+  assert.equal(short.status, 0, short.stderr);
+  assert.match(short.stdout, /npx reel-agent watch <link>/);
   const v = cli(["--version"]);
   assert.equal(v.stdout.trim(), JSON.parse(fs.readFileSync(path.join(here, "package.json"), "utf8")).version);
 });

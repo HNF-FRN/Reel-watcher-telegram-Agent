@@ -31,11 +31,4 @@ with tempfile.TemporaryDirectory() as d:
 
     run_setup(tg, pasted=f"  {TOKEN} ")                      # new setup: token pasted
     assert plugin_token(env) == TOKEN, env.read_bytes()
-
-    for bad in (f"TELEGRAM_BOT_TOKEN={TOKEN}\r\n", f"﻿TELEGRAM_BOT_TOKEN={TOKEN}\r\n"):  # Notepad / old setup
-        env.write_bytes(bad.encode("utf-8"))
-        run_setup(tg, check=True)
-        assert plugin_token(env) != TOKEN, "--check must not change the file"
-        run_setup(tg)
-        assert plugin_token(env) == TOKEN, env.read_bytes()
 print("ok: setup saves a token the plugin can read")

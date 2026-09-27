@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -27,6 +27,8 @@ CLAUDE_MODELS = ("haiku", "sonnet", "opus", "fable")
 BUILD_MODELS = CLAUDE_MODELS + ("codex",)
 TASKS = ("watch", "research", "plan", "build")
 MODES = ("safe", "normal")  # shell commands always need the user's OK (or an /always rule)
+GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]
+GIT_ID = ["-c", "user.name=Reel agent", "-c", "user.email=reel-agent@localhost"]
 DEFAULTS = {
     "models": {"watch": "sonnet", "research": "haiku", "plan": "opus", "build": "sonnet"},
     "mode": "normal",            # default permission level for builds
@@ -71,10 +73,11 @@ def write_json(path, obj):
 
 @contextmanager
 def file_lock(path, stale_sec=30):
+    """<path>.lock held for the block. Waits past stale_sec so a crashed holder's lock is always broken."""
     lock = Path(str(path) + ".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
-    fd = None
-    for _ in range(400):
+    deadline = time.time() + stale_sec + 5
+    while True:
         try:
             fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             break
@@ -84,27 +87,32 @@ def file_lock(path, stale_sec=30):
                     lock.unlink(missing_ok=True)
             except FileNotFoundError:
                 pass
+            if time.time() > deadline:
+                raise TimeoutError(f"{lock} is held by another process; try again")
             time.sleep(0.05)
     try:
         yield
     finally:
-        if fd is not None:
-            os.close(fd)
-            lock.unlink(missing_ok=True)
+        os.close(fd)
+        lock.unlink(missing_ok=True)
+
+
+@contextmanager
+def locked_json(path, default, write=True):
+    """Read a JSON file under its lock, yield it, write it back. A corrupt file raises instead of being replaced by
+    the default, so a bad read can never wipe the library."""
+    path = Path(path)
+    with file_lock(path):
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else default
+        yield data
+        if write:
+            write_json(path, data)
 
 
 def load_config():
-    cfg = json.loads(json.dumps(DEFAULTS))
+    """Saved settings over the defaults. Keeps every saved key (cloud_url too), so writing it back loses nothing."""
     saved = read_json(CONFIG, {}) or {}
-    cfg["models"].update(saved.get("models") or {})
-    for k in DEFAULTS:
-        if k != "models" and k in saved:
-            cfg[k] = saved[k]
-    return cfg
-
-
-def save_config(cfg):
-    write_json(CONFIG, cfg)
+    return {**json.loads(json.dumps(DEFAULTS)), **saved, "models": {**DEFAULTS["models"], **(saved.get("models") or {})}}
 
 
 # Variables that tie a process to the Claude session that launched it. A build (or the bot) that inherits them
@@ -225,32 +233,33 @@ def tg_api(method, params):
 
 
 # ---------------------------------------------------------------- usage tracking
-def quota_day():
-    """Gemini free-tier quotas reset at midnight Pacific time."""
+def pacific_now(utc=None):
+    """Gemini free-tier quotas reset at midnight Pacific time. zoneinfo needs the tzdata package on Windows, so
+    without it apply the US rule: daylight time from the 2nd Sunday of March to the 1st Sunday of November, 2:00."""
+    utc = utc or datetime.now(timezone.utc)
     try:
         from zoneinfo import ZoneInfo
-        return datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+        return utc.astimezone(ZoneInfo("America/Los_Angeles"))
     except Exception:
-        from datetime import timedelta, timezone
-        return (datetime.now(timezone.utc) - timedelta(hours=8)).strftime("%Y-%m-%d")
+        y = utc.year
+        start = datetime(y, 3, 8 + (6 - datetime(y, 3, 8).weekday()) % 7, 10, tzinfo=timezone.utc)  # 2:00 PST
+        end = datetime(y, 11, 1 + (6 - datetime(y, 11, 1).weekday()) % 7, 9, tzinfo=timezone.utc)  # 2:00 PDT
+        return utc.astimezone(timezone(timedelta(hours=-7 if start <= utc < end else -8)))
+
+
+def quota_day():
+    return pacific_now().strftime("%Y-%m-%d")
 
 
 def seconds_to_pacific_midnight():
-    try:
-        from zoneinfo import ZoneInfo
-        t = datetime.now(ZoneInfo("America/Los_Angeles"))
-    except Exception:
-        from datetime import timedelta, timezone
-        t = datetime.now(timezone.utc) - timedelta(hours=8)
+    t = pacific_now()
     return int(86400 - (t.hour * 3600 + t.minute * 60 + t.second))
 
 
 def gemini_usage_update(fn):
     """fn(day_record) mutates today's record: {"models": {m: {...}}, "exhausted": [...], "limits": {...}}."""
     with file_lock(GEMINI_USAGE):
-        data = read_json(GEMINI_USAGE, {}) or {}
-        if data.get("day") != quota_day():
-            data = {"day": quota_day(), "models": {}, "exhausted": [], "limits": data.get("limits", {})}
+        data = gemini_usage()
         fn(data)
         write_json(GEMINI_USAGE, data)
 

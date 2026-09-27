@@ -4,7 +4,6 @@ Every step checks first, explains what it will change, and asks before changing 
 time: finished steps are skipped. `python setup.py --check` only reports, changing nothing.
 """
 import getpass
-import json
 import os
 import re
 import shutil
@@ -13,6 +12,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / ".claude" / "skills" / "reel-watch" / "scripts"))
+from common import utf8_stdio  # noqa: E402
+
 HOME = Path.home()
 TG_DIR = HOME / ".claude" / "channels" / "telegram"
 PLUGIN = "telegram@claude-plugins-official"
@@ -80,18 +82,17 @@ def tools():
 
 
 def packages():
-    step(2, "Python packages (yt-dlp, faster-whisper, imageio-ffmpeg)")
-    missing = []
-    for mod in ("yt_dlp", "faster_whisper", "imageio_ffmpeg"):
-        if run([sys.executable, "-c", f"import {mod}"]).returncode != 0:
-            missing.append(mod)
+    step(2, "Python packages (yt-dlp, imageio-ffmpeg)")
+    missing = [mod for mod in ("yt_dlp", "imageio_ffmpeg") if run([sys.executable, "-c", f"import {mod}"]).returncode != 0]
+    if run([sys.executable, "-c", "import faster_whisper"]).returncode != 0:
+        say("    optional: python -m pip install faster-whisper (transcripts when Gemini is off)")
     if not missing:
         ok("all installed")
     elif ask(f"Missing: {', '.join(missing)}. Install from requirements.txt now?"):
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")])
         (ok if r.returncode == 0 else todo)("installed" if r.returncode == 0 else "pip install failed")
     else:
-        todo(f"install packages: python -m pip install -r requirements.txt")
+        todo("install packages: python -m pip install -r requirements.txt")
 
 
 def telegram():
@@ -113,17 +114,10 @@ def telegram():
         todo(f"install the plugin: claude plugin install {PLUGIN}")
 
     env = TG_DIR / ".env"
-    raw = env.read_bytes() if env.exists() else b""
-    has_token = b"TELEGRAM_BOT_TOKEN=" in raw
     # The plugin reads this file with /^(\w+)=(.*)$/ per "\n"-split line: a Windows "\r\n" or a BOM makes it
     # see no token, so it exits at startup and the bot never answers (no pairing code). Always LF, no BOM.
-    if has_token and (b"\r" in raw or raw.startswith(b"\xef\xbb\xbf")):
-        if CHECK:
-            todo("bot token file has Windows line endings: the plugin can't read it. Run setup (it fixes this)")
-        else:
-            env.write_bytes(raw.removeprefix(b"\xef\xbb\xbf").replace(b"\r", b""))
-            ok("bot token saved (fixed Windows line endings the plugin can't read)")
-    elif has_token:
+    # (start.ps1 repairs a file edited in Notepad before every start.)
+    if env.exists() and b"TELEGRAM_BOT_TOKEN=" in env.read_bytes():
         ok("bot token saved")
     elif not CHECK:
         say("    Paste the token BotFather gave you (it looks like 123456789:AAH...).")
@@ -190,7 +184,7 @@ def reminders():
         r = run([sys.executable, str(remind), "install"])
         (ok if "installed" in r.stdout else todo)(r.stdout.strip().splitlines()[0] if r.stdout.strip() else "install failed")
     else:
-        todo(f"set up reminders: python reminders\\remind.py install")
+        todo("set up reminders: python reminders\\remind.py install")
 
     gmd = HOME / ".claude" / "CLAUDE.md"
     current = gmd.read_text(encoding="utf-8") if gmd.exists() else ""
@@ -226,11 +220,7 @@ def autostart():
 
 
 def main():
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
+    utf8_stdio()
     say("Reel Agent setup" + ("  (check only, nothing will change)" if CHECK else ""))
     say(f"Project folder: {ROOT}")
     tools()

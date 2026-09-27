@@ -30,15 +30,13 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import (BUILD_MODELS, BUILDS, CLAUDE_USAGE, MODES, REELS, SCRIPTS, TASKS, claude_usage_record, clean_env,  # noqa: E402
-                    find_exe, gemini_usage, load_config, now, pid_alive, read_json, save_config,
-                    seconds_to_pacific_midnight, utf8_stdio, write_json)
+from common import (BUILD_MODELS, BUILDS, CLAUDE_USAGE, CONFIG, GEMINI_MODELS, GIT_ID, MODES, REELS, SCRIPTS,  # noqa: E402
+                    TASKS, claude_usage_record, clean_env, find_exe, gemini_usage, load_config, now, pid_alive,
+                    read_json, seconds_to_pacific_midnight, utf8_stdio, write_json)
 
 JOBS = REELS / "jobs.json"
-GIT_ID = ["-c", "user.name=Reel agent", "-c", "user.email=reel-agent@localhost"]
 NO_WINDOW = 0x08000000
 RUNNING = ("running", "waiting-approval")
-GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]  # keep in sync with reel.py
 
 
 def die(msg):
@@ -193,10 +191,7 @@ def cmd_tell(a):
         (inbox / f"{int(time.time() * 1000)}.txt").write_text(text, encoding="utf-8")
         print(f"OK passed to the running #{a.n} {st.get('kind')}; it reads it after its current step.")
         return
-    if st.get("model") == "codex":
-        launch(d, f"Continue job #{a.n} in this folder. Previous summary:\n{st.get('result', '')[:1500]}\n\nThe user says: {text}")
-    else:
-        launch(d, f"Message from the user (via Telegram): {text}", resume=bool(st.get("session_id")))
+    relaunch(a.n, d, st, f"The user says: {text}", f"Message from the user (via Telegram): {text}")
     print(f"OK #{a.n} continues its {st.get('kind')} ({st.get('model')}) with your message.")
 
 
@@ -218,15 +213,20 @@ def cmd_stop(a):
     print(f"OK stopping #{a.n}. /resume {a.n} continues it later.")
 
 
+def relaunch(n, d, st, codex_text, claude_text):
+    """Continue a finished run. Codex has no session to resume, so it gets the last summary instead."""
+    if st.get("model") == "codex":
+        launch(d, f"Continue job #{n} in this folder. Previous summary:\n{st.get('result', '')[:1500]}\n\n{codex_text}")
+    else:
+        launch(d, claude_text, resume=bool(st.get("session_id")))
+
+
 def cmd_resume(a):
     d, st = need(a.n)
     if is_running(st):
         die(f"#{a.n} is already running.")
     text = " ".join(a.text).strip() or "Continue where you left off."
-    if st.get("model") == "codex":
-        launch(d, f"Continue job #{a.n} in this folder. Previous summary:\n{st.get('result', '')[:1500]}\n\n{text}")
-    else:
-        launch(d, text, resume=bool(st.get("session_id")))
+    relaunch(a.n, d, st, text, text)
     print(f"OK #{a.n} resumed with {st.get('model')}.")
 
 
@@ -475,7 +475,7 @@ def cmd_config(a):
         cfg["budget_usd"] = None if args[1] in ("off", "none", "0") else float(args[1])
     else:
         die(f"Usage: config model <task> <model> | mode <{'|'.join(MODES)}> | limit <min> | timeout <min> | budget <usd|off>")
-    save_config(cfg)
+    write_json(CONFIG, cfg)
     print("OK " + " ".join(args))
 
 

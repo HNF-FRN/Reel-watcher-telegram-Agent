@@ -2,7 +2,7 @@
 
 **Symptom.** You finished setup, ran `.\bot start`, messaged the new bot on Telegram, and nothing came back: no pairing code, no reply at all.
 
-**Status.** Fixed on 2026-09-22. `setup.py` now saves the token correctly and repairs old files, and `start.ps1` repairs the file before every launch. New setups and existing ones on any PC are covered.
+**Status.** Fixed on 2026-09-22. `setup.py` now saves the token correctly, and `start.ps1` repairs old files before every launch. New setups and existing ones on any PC are covered.
 
 ## How it was found
 

@@ -42,8 +42,7 @@ cp wrangler.jsonc wrangler.local.jsonc
 ```
 
 In `wrangler.local.jsonc` (git-ignored), put the `database_id` from the previous command. Then create the tables
-(an existing database from the first cloud version: use `upgrade-2.sql` instead of `schema.sql`) and set the
-secrets. Each `secret put` asks for the value, so nothing lands in your shell history or this repository:
+and set the secrets. Each `secret put` asks for the value, so nothing lands in your shell history or this repository:
 
 ```sh
 npx wrangler d1 execute reel-agent-cloud --remote --file=schema.sql
@@ -94,7 +93,7 @@ cloud answers. Start the bot again and it takes over.
 | File | Runs | Does |
 |---|---|---|
 | `worker.mjs` | Cloudflare | Telegram webhook, commands, reminders, Gemini watching, failover watchdog, `/backend/*` for routines, `/pc/*` for the PC |
-| `schema.sql`, `upgrade-2.sql` | once | database tables |
+| `schema.sql` | once | database tables |
 | `pc_link.py` | your PC | sync with the Worker (called by `start.ps1`, `jobs.py`, `remind.py`) |
 | `ROUTINE.md` | Claude routine | the routine's instructions |
 | `client.py`, `watch.py` | Claude routine | report to the Worker; run `reel.py` on a link or Telegram file |

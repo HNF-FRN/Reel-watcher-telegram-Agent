@@ -1,4 +1,3 @@
--- Fresh install. An existing database from the first cloud version: run upgrade-2.sql instead.
 CREATE TABLE IF NOT EXISTS updates (
   update_id INTEGER PRIMARY KEY,
   received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
