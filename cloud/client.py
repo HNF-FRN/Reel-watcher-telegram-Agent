@@ -3,7 +3,6 @@ import argparse
 import json
 import os
 import sys
-import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -75,9 +74,6 @@ def main():
     finish.add_argument("--breakdown")
     finish.add_argument("--plan")
     finish.add_argument("--branch-url")
-    fetch = sub.add_parser("fetch-file")
-    fetch.add_argument("run_id")
-    fetch.add_argument("destination")
     args = parser.parse_args()
 
     if args.command == "start":
@@ -108,21 +104,6 @@ def main():
             call("PATCH", f"/backend/job/{item['job_id']}", patch)
         call("PATCH", f"/backend/run/{args.run_id}", {"status": args.status})
         call("POST", "/backend/message", {"chat_id": item["chat_id"], "text": finish_card(item, args)})
-    elif args.command == "fetch-file":
-        item = call("GET", f"/backend/run/{args.run_id}")
-        source = json.loads(call("GET", f"/backend/job/{item['job_id']}")["source"])
-        file_id = source.get("file_id")
-        if not file_id:
-            raise RuntimeError("This job has no Telegram attachment")
-        dest = Path(args.destination).resolve()
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        query = urllib.parse.urlencode({"file_id": file_id})
-        request = urllib.request.Request(BASE + "/backend/file?" + query,
-                                         headers=auth_headers())
-        with urllib.request.urlopen(request, timeout=120) as response, dest.open("wb") as output:
-            while chunk := response.read(1024 * 1024):
-                output.write(chunk)
-        print(str(dest))
 
 
 if __name__ == "__main__":

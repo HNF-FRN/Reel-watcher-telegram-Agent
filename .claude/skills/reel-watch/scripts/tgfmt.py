@@ -26,14 +26,6 @@ def tapify(text):
     return TAP_RE.sub(lambda m: "/" + m.group(1) + m.group(2).replace(" ", "_").replace("#", ""), text)
 
 
-def command_words(text):
-    """The reverse, for the bot reading a tapped command: "/snooze_R3_1h" -> "/snooze R3 1h"."""
-    m = re.match(r"^/([a-z]+)_(\S+)(.*)$", text.strip(), re.I | re.S)
-    if not m or m.group(1).lower() not in TAPPABLE:
-        return text
-    return f"/{m.group(1)} {m.group(2).replace('_', ' ')}{m.group(3)}"
-
-
 def _inline(line):
     codes = []
 

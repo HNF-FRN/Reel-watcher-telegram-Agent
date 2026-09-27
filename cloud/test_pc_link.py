@@ -51,8 +51,7 @@ class PcLinkTests(unittest.TestCase):
             (pc_link, "REELS", reels), (pc_link, "CONFIG", reels / "config.json"),
             (pc_link, "SYNC_STATE", reels / ".cloud_sync.json"), (pc_link, "_token", lambda: "123:TEST"),
             (jobs, "REELS", reels), (jobs, "JOBS", reels / "jobs.json"), (jobs, "INDEX", reels / "INDEX.md"),
-            (jobs, "LOCK", reels / ".jobs.lock"), (remind, "DATA", rem / "reminders.json"),
-            (remind, "VIEW", rem / "REMINDERS.md"), (remind, "LOCK", rem / ".lock"),
+            (remind, "DATA", rem / "reminders.json"), (remind, "VIEW", rem / "REMINDERS.md"),
             (remind, "sync", lambda data, **k: 0),  # never touch the real Task Scheduler
         ]
         self.saved = [(m, k, getattr(m, k)) for m, k, _ in patches]

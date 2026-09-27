@@ -24,18 +24,17 @@ import os
 import re
 import subprocess
 import sys
-import time
-import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
+from common import locked_json, utf8_stdio  # noqa: E402
+
 DATA = HERE / "reminders.json"
 VIEW = HERE / "REMINDERS.md"
-LOCK = HERE / ".reminders.lock"
 TASK_PATH = "\\ClaudeReminders\\"
-OLD_POLL_TASK = "ClaudeReminders"  # the 5-minute poller this replaced
 NO_WINDOW = 0x08000000
 FMT = "%Y-%m-%d %H:%M"
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -44,30 +43,10 @@ WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", 
 # ---------------------------------------------------------------- storage
 @contextmanager
 def store(write=True):
-    for _ in range(400):
-        try:
-            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            break
-        except FileExistsError:
-            try:
-                if time.time() - LOCK.stat().st_mtime > 30:
-                    LOCK.unlink(missing_ok=True)
-            except FileNotFoundError:
-                pass
-            time.sleep(0.05)
-    else:
-        sys.exit("reminders are locked by another process; try again")
-    try:
-        data = json.loads(DATA.read_text(encoding="utf-8")) if DATA.exists() else {"next": 1, "items": {}}
+    with locked_json(DATA, {"next": 1, "items": {}}, write) as data:
         yield data
         if write:
-            tmp = DATA.with_name(f"reminders.{uuid.uuid4().hex[:6]}.tmp")
-            tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(DATA)
             write_view(data)
-    finally:
-        os.close(fd)
-        LOCK.unlink(missing_ok=True)
 
 
 def write_view(data):
@@ -154,7 +133,6 @@ def tg_send(text):
             f.write(f"--- {datetime.now():%H:%M:%S}\n{text}\n")
         return True
     # The reel agent's sender formats the message (bold, one-tap commands) and reads the bot token itself.
-    sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
     from common import tg_send as send  # noqa: PLC0415
     return bool(send(text))
 
@@ -164,7 +142,6 @@ def cloud_link():
     if os.environ.get("REMIND_DRYRUN") or (HERE / ".dryrun").exists():
         return None
     try:
-        sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
         from common import cloud_link as find
         return find()
     except Exception:
@@ -234,8 +211,6 @@ def install():
     exe, args = runner_cmd()
     r = run_ps(f"""
 $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'
-# the retired 5-minute poller was a task named ClaudeReminders in the root folder (not the folder itself)
-Get-ScheduledTask -TaskName '{OLD_POLL_TASK}' -TaskPath '\\' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 # drop old entries so every one is re-created pointing at this copy of remind.py
 Get-ScheduledTask -TaskPath '{TASK_PATH}' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 $action = New-ScheduledTaskAction -Execute '{exe}' -Argument '{args}'
@@ -249,7 +224,6 @@ Register-ScheduledTask -TaskName 'AtLogon' -TaskPath '{TASK_PATH}' -Action $acti
 
 def uninstall():
     run_ps(f"""
-Get-ScheduledTask -TaskName '{OLD_POLL_TASK}' -TaskPath '\\' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 Get-ScheduledTask -TaskPath '{TASK_PATH}' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 """)
     print("removed all Claude reminder entries from Task Scheduler (the list itself is kept)")
@@ -264,11 +238,7 @@ def find(data, rid):
 
 
 def main():
-    for stream in (sys.stdout, sys.stderr):
-        try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
+    utf8_stdio()
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("add"); p.add_argument("text"); p.add_argument("--at"); p.add_argument("--in", dest="in_")

@@ -1,4 +1,3 @@
-# Reel downloads, local speech-to-text (backup watcher) and a bundled ffmpeg
+# Reel downloads and a bundled ffmpeg. Optional: faster-whisper, for transcripts when Gemini is off
 yt-dlp
-faster-whisper
 imageio-ffmpeg

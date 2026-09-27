@@ -1,5 +1,4 @@
 """Checks for tgfmt.py, the formatter every Telegram message goes through. Run: python test_messages.py"""
-import re
 import sys
 import unittest
 from html.parser import HTMLParser
@@ -44,12 +43,6 @@ class Commands(unittest.TestCase):
         for text in ("/tell 4 <changes>", "/remind tomorrow 9:00 call", "/plan N", "/new idea", "see /telegram:access pair"):
             self.assertEqual(tgfmt.tapify(text), text)
         self.assertEqual(tgfmt.tapify("/tell 4"), "/tell 4")
-
-    def test_tapped_commands_read_back(self):
-        self.assertEqual(tgfmt.command_words("/snooze_R3_1h"), "/snooze R3 1h")
-        self.assertEqual(tgfmt.command_words("/build_4_opus"), "/build 4 opus")
-        self.assertEqual(tgfmt.command_words("/plan 4"), "/plan 4")
-        self.assertEqual(tgfmt.command_words("/some_thing"), "/some_thing")
 
 
 class Html(unittest.TestCase):

@@ -9,7 +9,6 @@ import os
 import re
 import sys
 import time
-import urllib.error
 
 from client import call
 
@@ -43,7 +42,7 @@ def internal(command, cwd=None):
     elif os.path.abspath(cwd or os.getcwd()).replace("\\", "/") != PROJECT:
         return False
     return bool(re.fullmatch(
-        r"python3? cloud/(?:client\.py (?:start|get|send|finish|fetch-file)|watch\.py) .+", cmd))
+        r"python3? cloud/(?:client\.py (?:start|get|send|finish)|watch\.py) .+", cmd))
 
 
 def main():

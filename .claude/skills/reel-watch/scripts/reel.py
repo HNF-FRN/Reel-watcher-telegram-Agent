@@ -55,7 +55,6 @@ def data_root():
 DATA_ROOT = data_root()
 DEFAULT_OUT_ROOT = DATA_ROOT / "reels"
 GEMINI_API = "https://generativelanguage.googleapis.com"
-GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]
 GEMINI_INLINE_MAX = 50 * 1024 * 1024  # bigger videos go through the Files API
 IMAGE_EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
              ".heic": "image/heic"}
@@ -339,7 +338,7 @@ def gemini_request(method, url, key, body=None, headers=None, timeout=300):
 # reels/.gemini_usage.json (shown by /quota); a model that hits its daily limit is skipped until midnight Pacific.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
-from common import gemini_usage, gemini_usage_update  # noqa: E402
+from common import GEMINI_MODELS, gemini_usage, gemini_usage_update, utf8_stdio  # noqa: E402
 
 common.GEMINI_USAGE = DEFAULT_OUT_ROOT / ".gemini_usage.json"  # same file as before inside reel-agent
 
@@ -366,10 +365,6 @@ def record_usage(model, ok=False, limited=False, counted=True, tokens=0, exhaust
         gemini_usage_update(fn)
     except Exception as e:
         log(f"(couldn't record Gemini usage: {e})")
-
-
-def mark_exhausted(model, msg=""):
-    record_usage(model, limited=True, counted=False, exhausted=True, msg=msg)
 
 
 def retry_delay(msg, default=5):
@@ -400,85 +395,51 @@ def gemini_upload(path, mime, key):
     raise RuntimeError("Gemini file processing timed out")
 
 
-def texts_in(obj):
-    """Collect model text from either a generateContent or an Interactions response."""
-    if isinstance(obj, dict):
-        if isinstance(obj.get("text"), str) and not obj.get("thought"):
-            yield obj["text"]
-        for v in obj.values():
-            if isinstance(v, (dict, list)):
-                yield from texts_in(v)
-    elif isinstance(obj, list):
-        for v in obj:
-            yield from texts_in(v)
-
-
-def response_text(res):
-    if res.get("candidates"):
-        return "\n".join(texts_in(res["candidates"])).strip()
-    steps = res.get("steps") or res.get("outputs") or []
-    if isinstance(steps, list) and any(isinstance(s, dict) and "type" in s for s in steps):
-        steps = [s for s in steps if isinstance(s, dict) and "output" in s.get("type", "")]
-    return "\n".join(texts_in(steps)).strip()
-
-
-def gemini_generate(parts, iparts, prompt, key):
-    """One request per reel when things are healthy. Per model: generateContent, retried once if busy
-    or rate limited per minute, then the Interactions API once; a model out of daily quota is skipped.
-    Returns (text, model)."""
+def gemini_generate(parts, prompt, key):
+    """One request per reel when things are healthy. Per model: generateContent, retried once if busy or rate
+    limited per minute; a model out of daily quota is skipped. Returns (text, model)."""
     models = [m for m in [os.environ.get("REEL_GEMINI_MODEL")] if m] + GEMINI_MODELS
     skip = exhausted_models()
     errors = [f"{m}: daily free quota used up" for m in dict.fromkeys(models) if m in skip]
     for model in dict.fromkeys(models):
         if model in skip:
             continue
-        calls = [
-            ("generateContent", f"{GEMINI_API}/v1beta/models/{model}:generateContent", {
-                "system_instruction": {"parts": [{"text": GEMINI_SYSTEM}]},
+        url = f"{GEMINI_API}/v1beta/models/{model}:generateContent"
+        body = {"system_instruction": {"parts": [{"text": GEMINI_SYSTEM}]},
                 "contents": [{"role": "user", "parts": parts + [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.2}}),
-            ("interactions", f"{GEMINI_API}/v1beta/interactions", {
-                "model": model, "system_instruction": GEMINI_SYSTEM,
-                "input": iparts + [{"type": "text", "text": prompt}]}),
-        ]
-        plan = [calls[0], calls[0], calls[1]]  # try, one retry, then the other API
-        daily_out = False
-        for i, (api, url, body) in enumerate(plan):
+                "generationConfig": {"temperature": 0.2}}
+        for attempt in range(2):  # try, then one retry
             try:
-                log(f"gemini: {model} via {api} ...")
+                log(f"gemini: {model} ...")
                 _, res = gemini_request("POST", url, key, body)
-                text = response_text(res)
-                usage = res.get("usageMetadata") or res.get("usage") or {}
-                tokens = usage.get("totalTokenCount") or usage.get("total_tokens") or 0
-                record_usage(model, ok=bool(text), tokens=tokens)
+                text = "\n".join(p["text"] for c in res.get("candidates") or [] for p in (c.get("content") or {}).get("parts") or []
+                                 if isinstance(p.get("text"), str) and not p.get("thought")).strip()
+                record_usage(model, ok=bool(text), tokens=(res.get("usageMetadata") or {}).get("totalTokenCount") or 0)
                 if text:
                     return text, model
-                errors.append(f"{model}/{api}: empty response {json.dumps(res)[:200]}")
+                errors.append(f"{model}: empty response {json.dumps(res)[:200]}")
                 break  # blocked or empty: another try won't change it
             except GeminiError as e:
                 msg = str(e)
-                log(f"gemini {model}/{api} failed: {msg[:160]}")
+                log(f"gemini {model} failed: {msg[:160]}")
                 if e.code in (401, 403) or "API_KEY_INVALID" in msg or "API key not valid" in msg:
                     raise RuntimeError(f"Gemini rejected the API key: {msg[:200]}")  # other models won't help
                 if e.code == 404:
                     errors.append(f"{model}: not available")
                     break
                 if e.code == 429 and re.search(r"per ?day|PerDay", msg, re.I):
-                    mark_exhausted(model, msg)
+                    record_usage(model, limited=True, counted=False, exhausted=True, msg=msg)
                     errors.append(f"{model}: daily free quota used up")
-                    daily_out = True
                     break
                 if e.code == 429:
                     record_usage(model, limited=True, counted=False, msg=msg)
                 if e.code in (0, 429, 500, 502, 503, 504):
-                    errors.append(f"{model}/{api}: {msg[:160]}")
-                    if i < len(plan) - 1:
+                    errors.append(f"{model}: {msg[:160]}")
+                    if attempt == 0:
                         time.sleep(retry_delay(msg) if e.code == 429 else 4)
                     continue
-                errors.append(f"{model}/{api}: {msg[:200]}")
+                errors.append(f"{model}: {msg[:200]}")
                 break
-        if daily_out:
-            continue
     if errors and all("daily free quota" in x for x in errors):
         raise RuntimeError("Gemini free daily quota is used up for every model (resets at midnight Pacific)")
     raise RuntimeError("; ".join(errors[-4:]) or "no Gemini model worked")
@@ -496,13 +457,11 @@ def gemini_watch_video(video, meta, key):
     if video.stat().st_size <= GEMINI_INLINE_MAX:
         b64 = base64.b64encode(video.read_bytes()).decode()
         parts = [{"inline_data": {"mime_type": mime, "data": b64}}]
-        iparts = [{"type": "video", "mime_type": mime, "data": b64}]
     else:
         uploaded = gemini_upload(video, mime, key)
         parts = [{"file_data": {"mime_type": mime, "file_uri": uploaded["uri"]}}]
-        iparts = [{"type": "video", "mime_type": mime, "uri": uploaded["uri"]}]
     try:
-        return gemini_generate(parts, iparts, GEMINI_PROMPT_VIDEO.format(extra=caption_extra(meta)), key)
+        return gemini_generate(parts, GEMINI_PROMPT_VIDEO.format(extra=caption_extra(meta)), key)
     finally:
         if uploaded:
             try:
@@ -512,28 +471,18 @@ def gemini_watch_video(video, meta, key):
 
 
 def gemini_watch_youtube(url, key):
-    parts = [{"file_data": {"file_uri": url}}]
-    iparts = [{"type": "video", "uri": url}]
-    return gemini_generate(parts, iparts, GEMINI_PROMPT_VIDEO.format(extra=""), key)
+    return gemini_generate([{"file_data": {"file_uri": url}}], GEMINI_PROMPT_VIDEO.format(extra=""), key)
 
 
 def gemini_watch_images(images, meta, key):
-    parts, iparts = [], []
-    for p in images:
-        mime = IMAGE_EXT.get(p.suffix.lower(), "image/jpeg")
-        b64 = base64.b64encode(p.read_bytes()).decode()
-        parts.append({"inline_data": {"mime_type": mime, "data": b64}})
-        iparts.append({"type": "image", "mime_type": mime, "data": b64})
-    return gemini_generate(parts, iparts, GEMINI_PROMPT_IMAGES.format(extra=caption_extra(meta)), key)
+    parts = [{"inline_data": {"mime_type": IMAGE_EXT.get(p.suffix.lower(), "image/jpeg"),
+                              "data": base64.b64encode(p.read_bytes()).decode()}} for p in images]
+    return gemini_generate(parts, GEMINI_PROMPT_IMAGES.format(extra=caption_extra(meta)), key)
 
 
 # ---------------------------------------------------------------- main
 def main():
-    for stream in (sys.stdout, sys.stderr):  # Windows consoles default to cp1252
-        try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
-            pass
+    utf8_stdio()  # Windows consoles default to cp1252
     ap = argparse.ArgumentParser()
     ap.add_argument("sources", nargs="+", help="a link, a local video, or one or more local images")
     ap.add_argument("--engine", choices=["auto", "gemini", "local"], default=os.environ.get("REEL_ENGINE", "auto"),

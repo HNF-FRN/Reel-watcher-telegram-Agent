@@ -9,6 +9,7 @@ Started by build.py; never run by hand. It drives a headless Claude session (or 
 Files in <build>/.reel/: state.json, log.md, events.jsonl, inbox/ (tell messages), answer.json, stop
 """
 import json
+import os
 import queue
 import re
 import subprocess
@@ -18,7 +19,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import claude_usage_record, clean_env, find_exe, load_config, now, read_json, tg_send, utf8_stdio, write_json  # noqa: E402
+from common import GIT_ID, claude_usage_record, clean_env, find_exe, load_config, now, read_json, tg_send, utf8_stdio, write_json  # noqa: E402
 
 NO_WINDOW = 0x08000000
 READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "LS", "WebSearch", "WebFetch", "TodoWrite", "TodoRead", "Task", "Agent",
@@ -305,11 +306,10 @@ class Runner:
         return (time.time() - self.active_start - waiting) / 60
 
     # ------------------------------------------------------------ main loops
-    def run_claude(self):
-        self.start(self.claude_cmd())
-        self.send_user(self.message)
-        done_streams = 0
+    def drain(self, on_event, tick=lambda: None):
+        """Read both output streams until they close, handing each JSON event to on_event; honour /stop and the time limit."""
         limit = self.state.get("limit_min") or self.cfg.get("limit_min") or 60
+        done_streams = 0
         while done_streams < 2:
             try:
                 name, line = self.q.get(timeout=1)
@@ -323,11 +323,10 @@ class Runner:
                 with open(self.meta / "events.jsonl", "a", encoding="utf-8") as f:
                     f.write(line)
                 try:
-                    self.handle(json.loads(line))
+                    on_event(json.loads(line))
                 except json.JSONDecodeError:
                     pass
-            self.check_inbox()
-            self.check_answer()
+            tick()
             if (self.meta / "stop").exists():
                 (self.meta / "stop").unlink(missing_ok=True)
                 self.stopped_reason = "stopped by you"
@@ -335,14 +334,23 @@ class Runner:
             elif self.active_minutes() > limit and not self.stopped_reason:
                 self.stopped_reason = f"time limit ({limit} min)"
                 self.kill()
-            # all messages answered, nothing queued: close stdin so the session ends
-            if (self.results >= self.sent and not self.pending and not list((self.meta / "inbox").glob("*.txt"))
-                    and self.proc.stdin and not self.proc.stdin.closed and self.results):
-                try:
-                    self.proc.stdin.close()
-                except OSError:
-                    pass
         self.proc.wait(timeout=60)
+
+    def claude_tick(self):
+        self.check_inbox()
+        self.check_answer()
+        # all messages answered, nothing queued: close stdin so the session ends
+        if (self.results >= self.sent and not self.pending and not list((self.meta / "inbox").glob("*.txt"))
+                and self.proc.stdin and not self.proc.stdin.closed and self.results):
+            try:
+                self.proc.stdin.close()
+            except OSError:
+                pass
+
+    def run_claude(self):
+        self.start(self.claude_cmd())
+        self.send_user(self.message)
+        self.drain(self.handle, self.claude_tick)
 
     def run_codex(self):
         exe = find_exe("codex")
@@ -355,35 +363,13 @@ class Runner:
         # the prompt goes through stdin: codex is a .cmd shim on Windows, which cuts multi-line arguments
         self.proc.stdin.write(prompt)
         self.proc.stdin.close()
-        limit = self.state.get("limit_min") or self.cfg.get("limit_min") or 60
-        done_streams = 0
-        while done_streams < 2:
-            try:
-                name, line = self.q.get(timeout=1)
-            except queue.Empty:
-                name, line = None, ""
-            if name and line is None:
-                done_streams += 1
-            elif name == "out" and line.strip():
-                with open(self.meta / "events.jsonl", "a", encoding="utf-8") as f:
-                    f.write(line)
-                try:
-                    ev = json.loads(line)
-                    item = ev.get("item") or ev.get("msg") or {}
-                    kind = item.get("type") or ev.get("type")
-                    text = item.get("text") or item.get("command") or item.get("message") or ""
-                    if text:
-                        self.log(f"🔧 {kind}: {str(text)[:200]}")
-                except json.JSONDecodeError:
-                    pass
-            if (self.meta / "stop").exists():
-                (self.meta / "stop").unlink(missing_ok=True)
-                self.stopped_reason = "stopped by you"
-                self.kill()
-            elif self.active_minutes() > limit and not self.stopped_reason:
-                self.stopped_reason = f"time limit ({limit} min)"
-                self.kill()
-        self.proc.wait(timeout=60)
+
+        def on_event(ev):
+            item = ev.get("item") or ev.get("msg") or {}
+            text = item.get("text") or item.get("command") or item.get("message") or ""
+            if text:
+                self.log(f"🔧 {item.get('type') or ev.get('type')}: {str(text)[:200]}")
+        self.drain(on_event)
         result = last.read_text(encoding="utf-8") if last.exists() else ""
         if plan and result:
             (self.dir / "PLAN.md").write_text(result, encoding="utf-8")
@@ -392,7 +378,7 @@ class Runner:
         self.save(result=result[:4000])
 
     def commit(self):
-        git = ["git", "-C", str(self.dir), "-c", "user.name=Reel agent", "-c", "user.email=reel-agent@localhost"]
+        git = ["git", "-C", str(self.dir), *GIT_ID]
         subprocess.run(git + ["add", "-A"], capture_output=True)
         run_no = (self.state.get("runs") or 0)
         subprocess.run(git + ["commit", "-q", "-m", f"#{self.n} run {run_no}: {self.state.get('kind')}"],
@@ -400,7 +386,7 @@ class Runner:
 
     def main(self):
         runs = (self.state.get("runs") or 0) + 1
-        self.save(status="running", runner_pid=__import__("os").getpid(), runs=runs, run_started=now(),
+        self.save(status="running", runner_pid=os.getpid(), runs=runs, run_started=now(),
                   events=self.state.get("events", []) if self.resume else [])
         if not self.resume:
             self.state["started"] = now()

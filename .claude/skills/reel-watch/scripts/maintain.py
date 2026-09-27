@@ -84,7 +84,7 @@ def startup():
         print(r.stdout.strip() or r.stderr.strip())
     for tmp in REELS.glob("*.tmp"):
         tmp.unlink(missing_ok=True)
-    for lock in list(REELS.glob("*.lock")) + [REELS / ".jobs.lock"]:
+    for lock in REELS.glob("*.lock"):
         lock.unlink(missing_ok=True)  # no worker can be alive before the bot starts
     info = read_json(REELS / ".bot_started.json", {}) or {}
     write_json(REELS / ".bot_started.json", {"at": now(), "count": info.get("count", 0) + 1})

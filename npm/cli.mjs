@@ -24,14 +24,14 @@ const SAVED = path.join(HOME, ".reel-agent.json");
 const BOT_COMMANDS = ["start", "stop", "restart", "status", "fix", "update", "tasks", "quota", "autostart"];
 
 const argv = process.argv.slice(2);
-const flags = new Set(argv.filter((a) => a.startsWith("--") && !a.includes("=")));
+const flags = new Set(argv.filter((a) => a.startsWith("-") && !a.includes("=")));
 const opt = (name) => {
   const i = argv.indexOf(`--${name}`);
   if (i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--")) return argv[i + 1];
   const eq = argv.find((a) => a.startsWith(`--${name}=`));
   return eq ? eq.slice(name.length + 3) : undefined;
 };
-const positional = argv.filter((a, i) => !a.startsWith("--") && !(i > 0 && argv[i - 1] === "--dir"));
+const positional = argv.filter((a, i) => !a.startsWith("-") && !(i > 0 && argv[i - 1] === "--dir"));
 const YES = flags.has("--yes") || flags.has("-y");
 
 // ------------------------------------------------------------------ output
