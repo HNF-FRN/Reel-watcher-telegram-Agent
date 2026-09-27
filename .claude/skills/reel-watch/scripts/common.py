@@ -73,19 +73,28 @@ def write_json(path, obj):
 
 @contextmanager
 def file_lock(path, stale_sec=30):
-    """<path>.lock held for the block. Waits past stale_sec so a crashed holder's lock is always broken."""
+    """<path>.lock held for the block. The lock holds its owner's "pid:token": it is broken only when that process
+    has died (a live holder may take long, e.g. remind.py waiting on Task Scheduler), and a holder removes it only
+    while it is still its own. A lock with no readable owner counts as stale after stale_sec."""
     lock = Path(str(path) + ".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
+    me = f"{os.getpid()}:{uuid.uuid4().hex}"
     deadline = time.time() + stale_sec + 5
     while True:
         try:
             fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, me.encode())
+            os.close(fd)
             break
         except FileExistsError:
             try:
-                if time.time() - lock.stat().st_mtime > stale_sec:
-                    lock.unlink(missing_ok=True)
-            except FileNotFoundError:
+                owner = lock.read_text(encoding="utf-8")
+                pid = owner.partition(":")[0]
+                # ponytail: a dead owner's pid reused by a new process looks alive; the bot clears reels/*.lock at start
+                if (not pid_alive(int(pid))) if pid.isdigit() else time.time() - lock.stat().st_mtime > stale_sec:
+                    if lock.read_text(encoding="utf-8") == owner:
+                        lock.unlink(missing_ok=True)
+            except (FileNotFoundError, PermissionError):
                 pass
             if time.time() > deadline:
                 raise TimeoutError(f"{lock} is held by another process; try again")
@@ -93,8 +102,11 @@ def file_lock(path, stale_sec=30):
     try:
         yield
     finally:
-        os.close(fd)
-        lock.unlink(missing_ok=True)
+        try:
+            if lock.read_text(encoding="utf-8") == me:
+                lock.unlink()
+        except FileNotFoundError:
+            pass
 
 
 @contextmanager
