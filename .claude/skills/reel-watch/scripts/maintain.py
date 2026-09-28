@@ -71,7 +71,7 @@ def cleanup(days):
     for d in REELS.iterdir() if REELS.exists() else []:
         if not d.is_dir() or d.stat().st_mtime > cutoff:
             continue
-        for f in list(d.glob("video.*")) + list(d.glob("audio.wav")):
+        for f in list(d.glob("video.*")) + list(d.glob("video_*.*")) + list(d.glob("audio.wav")):
             freed += f.stat().st_size
             f.unlink()
             n += 1

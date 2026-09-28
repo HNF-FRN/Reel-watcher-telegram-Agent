@@ -6,14 +6,15 @@ Usage:
 
 Sources:
     - video links (Instagram reels, TikTok, YouTube, X, ...) and local video files
-    - Instagram photo posts (first slide + caption; for full carousels send screenshots)
+    - Instagram posts: a photo, or a carousel with every slide (photos and videos) + caption, no login
     - one or more local images (photos / screenshots sent on Telegram)
     - YouTube links go straight to Gemini by URL (no download needed); a download is still
       attempted for check frames
 
 Pipeline:
     1. fetch   - free download chain: local file -> yt-dlp (no login) -> kkinstagram redirect
-                 -> yt-dlp with cookies (only if REEL_IG_COOKIES points to a cookies.txt)
+                 -> yt-dlp with cookies (only if REEL_IG_COOKIES points to a cookies.txt; for a post it goes
+                 before kkinstagram, which only has a post's first slide)
     2. gemini  - (main) Gemini watches the whole video with audio (or looks at the images) and returns
                  a breakdown + transcript. Needs GEMINI_API_KEY (env var, or .env in the project root or the current folder).
                  A few frames are still extracted so Claude can spot-check on-screen text.
@@ -86,6 +87,11 @@ def shortcode(url):
     return m.group(1) if m else None
 
 
+def is_instagram_post(url):
+    """/p/ links: a photo, a carousel or an older video post (reels live under /reel/)."""
+    return bool(re.search(r"instagram\.com/(?:[^/]+/)?p/[A-Za-z0-9_-]+", url))
+
+
 def is_youtube(url):
     return bool(re.match(r"https?://(www\.|m\.)?(youtube\.com/(watch|shorts/|live/)|youtu\.be/)", url))
 
@@ -113,8 +119,11 @@ def http_get(url, ua, dest=None, follow=True):
 
 
 # ---------------------------------------------------------------- fetch chain
+VIDEO_FORMAT = "mp4[height<=1080]/mp4/bestvideo*+bestaudio/best"
+
+
 def fetch_ytdlp(url, work, cookies=None, lowres=False):
-    fmt = "mp4[height<=480]/best[height<=480]/worst" if lowres else "mp4[height<=1080]/mp4/bestvideo*+bestaudio/best"
+    fmt = "mp4[height<=480]/best[height<=480]/worst" if lowres else VIDEO_FORMAT
     cmd = ["yt-dlp", "--no-warnings", "--no-playlist", "-f", fmt,
            "--write-info-json", "-o", str(work / "video.%(ext)s"), url]
     if cookies:
@@ -130,6 +139,54 @@ def fetch_ytdlp(url, work, cookies=None, lowres=False):
         meta = {k: d.get(k) for k in ("title", "description", "uploader", "channel", "webpage_url", "duration")}
         info.unlink()
     return "video", [vids[0]], meta
+
+
+def fetch_instagram_post(url, work, cookies=None):
+    """Every slide of an Instagram post, in order. yt-dlp lists all of them but has no format for a photo, so
+    --ignore-no-formats-error keeps it going and --write-thumbnail saves each photo at full size; video slides
+    download as usual. yt-dlp still exits 1 when it skipped a photo, so the files decide.
+    Returns kind 'video' (one video), 'images' (photos only) or 'slides' (photos and videos, or several videos)."""
+    tmp = work / "post"
+    tmp.mkdir(exist_ok=True)
+    cmd = ["yt-dlp", "--no-warnings", "--ignore-no-formats-error", "--write-thumbnail", "--write-info-json",
+           "-f", VIDEO_FORMAT, "-o", str(tmp / "%(playlist_index)s.%(ext)s"), url]
+    if cookies:
+        cmd[1:1] = ["--cookies", cookies]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
+        slides, meta, total = {}, {}, 1
+        for f in tmp.iterdir():
+            n = f.name.split(".")[0]
+            n = int(n) if n.isdigit() else 1  # "NA": a post with one slide; "0": the carousel's own info
+            ext = f.suffix.lower()
+            if f.name.endswith(".info.json"):
+                d = json.loads(f.read_text(encoding="utf-8"))
+                meta = meta or {k: d.get(k) for k in ("title", "description", "uploader", "channel", "webpage_url")}
+                total = max(total, d.get("playlist_count") or 1)
+            elif n and (ext in VIDEO_MIME or ext in IMAGE_EXT):
+                # a video slide also gets its cover image; the video wins
+                slides.setdefault(n, {})["video" if ext in VIDEO_MIME else "image"] = f
+        if not slides:
+            errors = [x for x in r.stderr.splitlines() if x.strip() and "No video formats found" not in x]
+            raise RuntimeError(errors[-1] if errors else "yt-dlp found no slides")
+        total = max([total, *slides])  # the info files can be missing; the slide numbers still count
+        if total == 1 and "video" in slides[1]:
+            dest = work / ("video" + slides[1]["video"].suffix.lower())
+            slides[1]["video"].replace(dest)
+            return "video", [dest], meta
+        paths = []
+        for n, s in sorted(slides.items()):  # files keep the slide's own number, even after a missing one
+            p = s.get("video") or s["image"]
+            dest = work / f"{'video' if 'video' in s else 'image'}_{n:02d}{p.suffix.lower()}"
+            p.replace(dest)
+            paths.append(dest)
+        missing = [str(n) for n in range(1, total + 1) if n not in slides]
+        if missing:
+            meta["note"] = (f"Instagram post: only {len(slides)} of its {total} slides could be downloaded "
+                            f"(missing: slide {', '.join(missing)})")
+        return ("images" if all(p.name.startswith("image_") for p in paths) else "slides"), paths, meta
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def fetch_kkinstagram(url, work):
@@ -156,7 +213,8 @@ def fetch_kkinstagram(url, work):
     ext = re.search(r"\.(jpe?g|webp|heic)(\?|$)", loc).group(1)
     dest = work / f"image_01.{ext}"
     http_get(loc, UA_BROWSER, dest=dest)
-    return "images", [dest], {"note": "Instagram photo post: only the first slide can be fetched without login"}
+    return "images", [dest], {"note": "Instagram post: only the first slide could be fetched (yt-dlp couldn't read it; "
+                                      "updating it may help: python -m pip install -U \"yt-dlp[default,curl-cffi]\")"}
 
 
 def instagram_caption(url):
@@ -179,7 +237,8 @@ def instagram_caption(url):
 
 
 def fetch(sources, work, lowres=False):
-    """Returns (kind, paths, meta, via) with kind 'video' or 'images'. lowres: only needed for check frames."""
+    """Returns (kind, paths, meta, via) with kind 'video', 'images' or 'slides' (an Instagram carousel with videos).
+    lowres: only needed for check frames."""
     local = [Path(s) for s in sources if Path(s).exists()]
     if local:
         imgs = [p for p in local if p.suffix.lower() in IMAGE_EXT]
@@ -195,12 +254,16 @@ def fetch(sources, work, lowres=False):
         return "video", [dest], {}, "local-file"
 
     source = sources[0]
-    attempts = [("yt-dlp", lambda: fetch_ytdlp(source, work, lowres=lowres))]
-    if shortcode(source):
-        attempts.append(("kkinstagram", lambda: fetch_kkinstagram(source, work)))
+    post = is_instagram_post(source)
+
+    def ytdlp(cookies=None):
+        return fetch_instagram_post(source, work, cookies) if post else fetch_ytdlp(source, work, cookies, lowres)
+
     cookies = os.environ.get("REEL_IG_COOKIES")
-    if cookies and Path(cookies).exists():
-        attempts.append(("yt-dlp+cookies", lambda: fetch_ytdlp(source, work, cookies)))
+    login = [("yt-dlp+cookies", lambda: ytdlp(cookies))] if cookies and Path(cookies).exists() else []
+    proxy = [("kkinstagram", lambda: fetch_kkinstagram(source, work))] if shortcode(source) else []
+    # kkinstagram has a whole reel but only a post's first slide, so for a post the login goes first
+    attempts = [("yt-dlp", ytdlp)] + (login + proxy if post else proxy + login)
     errors = []
     for name, fn in attempts:
         try:
@@ -220,10 +283,10 @@ def duration_of(ff, video):
     return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else None
 
 
-def extract_frames(ff, video, work, dur, max_frames):
-    fdir = work / "frames"
+def extract_frames(ff, video, work, dur, max_frames, folder="frames", floor=6):
+    fdir = work / folder
     fdir.mkdir(exist_ok=True)
-    n = max(6, min(max_frames, math.ceil(dur / 2))) if dur else max_frames
+    n = max(floor, min(max_frames, math.ceil(dur / 2))) if dur else max_frames
     fps = n / dur if dur else 0.5
     subprocess.run([ff, "-loglevel", "error", "-i", str(video), "-vf", f"fps={fps:.5f},scale=720:-2",
                     "-q:v", "3", str(fdir / "%03d.jpg")], check=True)
@@ -233,7 +296,7 @@ def extract_frames(ff, video, work, dur, max_frames):
 
 def transcribe(ff, video, work, model_name):
     wav = work / "audio.wav"
-    r = subprocess.run([ff, "-loglevel", "error", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(wav)])
+    r = subprocess.run([ff, "-loglevel", "error", "-y", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(wav)])
     if r.returncode != 0 or not wav.exists():
         return None
     try:
@@ -252,6 +315,49 @@ def transcribe(ff, video, work, model_name):
         except Exception as e:
             log(f"whisper on {device} failed: {e}")
     return None
+
+
+def slide_number(path, default):
+    """Carousel files keep their slide number (image_03.jpg), also when an earlier slide is missing."""
+    m = re.search(r"_(\d+)$", Path(path).stem)
+    return int(m.group(1)) if m else default
+
+
+def watch_slides(ff, paths, work, max_frames, want_transcript, whisper_model):
+    """A carousel with video slides: photos as they are; each video gets its own frames folder and, when asked, its
+    own transcript. The videos share one frame budget, with at least one frame each."""
+    share = max(1, max_frames // sum(p.suffix.lower() in VIDEO_MIME for p in paths))
+    slides = []
+    for i, p in enumerate(paths, 1):
+        n = slide_number(p, i)
+        if p.suffix.lower() in IMAGE_EXT:
+            slides.append({"slide": n, "type": "image", "path": str(p)})
+            continue
+        dur = duration_of(ff, p)
+        slides.append({"slide": n, "type": "video", "path": str(p), "duration_sec": dur,
+                       "frames": extract_frames(ff, p, work, dur, share, f"frames_{n:02d}", floor=min(6, share)),
+                       "transcript": transcribe(ff, p, work, whisper_model) if want_transcript else None})
+    return slides
+
+
+def said_at(transcript, t):
+    if not transcript:
+        return ""
+    return " ".join(s["text"] for s in transcript["segments"] if s["start"] <= t + 1 and s["end"] >= t - 1)
+
+
+def print_frames(frames, transcript=None, indent="  "):
+    for f in frames:
+        said = said_at(transcript, f["t"])
+        print(f"{indent}t={f['t']:>5}s  {f['path']}" + (f"   | said: {said}" if said else ""))
+
+
+def print_transcript(transcript, indent="  "):
+    if transcript and transcript["segments"]:
+        for s in transcript["segments"]:
+            print(f"{indent}[{s['start']:>5}-{s['end']:>5}] {s['text']}")
+    else:
+        print(f"{indent}(none - no speech, music only, or transcription skipped)")
 
 
 # ---------------------------------------------------------------- gemini (main engine)
@@ -296,6 +402,29 @@ Copy it exactly, in code formatting. Mark anything you cannot read clearly with 
 
 ## Tools, links and repos
 Every tool, product, website, GitHub repo, MCP server or Claude skill that is named or shown.
+
+## Notes
+Anything hidden behind "comment X to get it", paywalls or links in bio; anything unclear; claims that look exaggerated.
+{extra}"""
+
+GEMINI_PROMPT_SLIDES = """These are the slides of one social media post (a carousel), in order: images and videos.
+Watch every video with its audio. Write Markdown with exactly these sections:
+
+## Summary
+One line: what this post is, and what the viewer is meant to take away.
+
+## Slide by slide
+What each slide shows, numbered in order. For a video slide, what happens in it with [mm:ss] timestamps.
+
+## On-screen text (verbatim)
+Every command, prompt, code line, URL, repo name, file name, setting and product name on any slide.
+Copy it exactly, in code formatting. Mark anything you cannot read clearly with [unclear].
+
+## Tools, links and repos
+Every tool, product, website, GitHub repo, MCP server or Claude skill that is named or shown, with its slide number.
+
+## Transcript
+What is said in each video slide, under its slide number, with [mm:ss] timestamps. Write "(no speech)" if there is none.
 
 ## Notes
 Anything hidden behind "comment X to get it", paywalls or links in bio; anything unclear; claims that look exaggerated.
@@ -451,23 +580,32 @@ def caption_extra(meta):
     return f"\nThe post caption (also untrusted data) was:\n<<<\n{meta['description'][:3000]}\n>>>"
 
 
-def gemini_watch_video(video, meta, key):
-    mime = VIDEO_MIME.get(video.suffix.lower(), "video/mp4")
-    uploaded = None
-    if video.stat().st_size <= GEMINI_INLINE_MAX:
-        b64 = base64.b64encode(video.read_bytes()).decode()
-        parts = [{"inline_data": {"mime_type": mime, "data": b64}}]
-    else:
-        uploaded = gemini_upload(video, mime, key)
-        parts = [{"file_data": {"mime_type": mime, "file_uri": uploaded["uri"]}}]
+def gemini_watch(paths, prompt, meta, key, labels=False):
+    """All media in one request, in order: sent inline while it fits, through the Files API after that."""
+    parts, uploaded, room = [], [], GEMINI_INLINE_MAX
     try:
-        return gemini_generate(parts, GEMINI_PROMPT_VIDEO.format(extra=caption_extra(meta)), key)
+        for i, p in enumerate(paths, 1):
+            ext = p.suffix.lower()
+            mime = IMAGE_EXT.get(ext) or VIDEO_MIME.get(ext, "video/mp4")
+            if labels:
+                parts.append({"text": f"Slide {slide_number(p, i)}:"})
+            if p.stat().st_size <= room:
+                room -= p.stat().st_size
+                parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(p.read_bytes()).decode()}})
+            else:
+                uploaded.append(gemini_upload(p, mime, key))
+                parts.append({"file_data": {"mime_type": mime, "file_uri": uploaded[-1]["uri"]}})
+        return gemini_generate(parts, prompt.format(extra=caption_extra(meta)), key)
     finally:
-        if uploaded:
+        for f in uploaded:
             try:
-                gemini_request("DELETE", f"{GEMINI_API}/v1beta/{uploaded['name']}", key)
+                gemini_request("DELETE", f"{GEMINI_API}/v1beta/{f['name']}", key)
             except Exception:
                 pass
+
+
+def gemini_watch_video(video, meta, key):
+    return gemini_watch([video], GEMINI_PROMPT_VIDEO, meta, key)
 
 
 def gemini_watch_youtube(url, key):
@@ -475,9 +613,12 @@ def gemini_watch_youtube(url, key):
 
 
 def gemini_watch_images(images, meta, key):
-    parts = [{"inline_data": {"mime_type": IMAGE_EXT.get(p.suffix.lower(), "image/jpeg"),
-                              "data": base64.b64encode(p.read_bytes()).decode()}} for p in images]
-    return gemini_generate(parts, GEMINI_PROMPT_IMAGES.format(extra=caption_extra(meta)), key)
+    gap = any(slide_number(p, i) != i for i, p in enumerate(images, 1))  # a carousel slide failed to download
+    return gemini_watch(images, GEMINI_PROMPT_IMAGES, meta, key, labels=gap)
+
+
+def gemini_watch_slides(paths, meta, key):
+    return gemini_watch(paths, GEMINI_PROMPT_SLIDES, meta, key, labels=True)
 
 
 # ---------------------------------------------------------------- main
@@ -528,7 +669,9 @@ def main():
         if not analysis:
             print("FETCH_FAILED\n" + str(e) +
                   "\nAsk the user to send the video file itself (Instagram: Share -> Download, then send it to the bot)"
-                  "\nor, for a photo post, screenshots of the slides.")
+                  "\nor, for a photo post, screenshots of the slides."
+                  + ("\nAn old yt-dlp can't read Instagram: python -m pip install -U \"yt-dlp[default,curl-cffi]\""
+                     if shortcode(source) else ""))
             sys.exit(3)
         kind, paths, meta, via = "video", [], {}, "gemini-url"
         log(f"download failed, using Gemini's URL analysis only: {e}")
@@ -538,11 +681,18 @@ def main():
             meta["description"] = cap
 
     ff = ffmpeg_exe()
-    dur, frames, transcript = None, [], None
+    dur, frames, transcript, slides = None, [], None, []
     if kind == "images":
         if use_gemini and not analysis:
             run_gemini(gemini_watch_images, paths, meta, key)
         frames = [{"t": None, "path": str(p)} for p in paths]
+    elif kind == "slides":
+        if use_gemini and not analysis:
+            run_gemini(gemini_watch_slides, paths, meta, key)
+        slides = watch_slides(ff, paths, work, a.check_frames if analysis else a.max_frames,
+                              not analysis and not a.no_transcript, a.whisper_model)
+        frames = [dict(f, slide=s["slide"]) for s in slides
+                  for f in (s["frames"] if s["type"] == "video" else [{"t": None, "path": s["path"]}])]
     elif paths:
         video = paths[0]
         dur = duration_of(ff, video)
@@ -559,7 +709,7 @@ def main():
 
     manifest = {"sources": a.sources, "kind": kind, "fetched_via": via, "engine": engine,
                 "gemini_error": gemini_error, "media": [str(p) for p in paths], "duration_sec": dur,
-                "meta": meta, "frames": frames, "transcript": transcript,
+                "meta": meta, "frames": frames, "transcript": transcript, **({"slides": slides} if slides else {}),
                 "processing_sec": round(time.time() - t0, 1)}
     (work / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -567,7 +717,7 @@ def main():
     print(f"REEL_DIR: {work}")
     print(f"kind: {kind} | engine: {engine} | fetched via: {via}"
           + (f" | duration: {round(dur, 1)}s" if dur else "")
-          + f" | {'images' if kind == 'images' else 'frames'}: {len(frames)}")
+          + (f" | slides: {len(slides)}" if slides else f" | {'images' if kind == 'images' else 'frames'}: {len(frames)}"))
     if gemini_error:
         print(f"(gemini not used: {gemini_error})")
     if meta.get("note"):
@@ -587,25 +737,29 @@ def main():
         for f in frames:
             print(f"  {f['path']}")
         return
+    if slides:
+        print("\nSLIDES (in order: Read every image, and " + ("the video frames you need to confirm exact on-screen text):"
+                                                           if analysis else "every video frame):"))
+        for s in slides:
+            if s["type"] == "image":
+                print(f"  slide {s['slide']}: image  {s['path']}")
+                continue
+            print(f"  slide {s['slide']}: video" + (f", {round(s['duration_sec'], 1)}s" if s["duration_sec"] else ""))
+            print_frames(s["frames"], s["transcript"], indent="    ")
+            if not analysis:
+                print("    TRANSCRIPT:")
+                print_transcript(s["transcript"], indent="      ")
+        return
     if analysis:
         if frames:
             print("\nCHECK FRAMES (Read the ones you need to confirm exact on-screen text):")
-            for f in frames:
-                print(f"  t={f['t']:>5}s  {f['path']}")
+            print_frames(frames)
         return
 
     print("\nFRAMES (Read each image):")
-    for f in frames:
-        said = ""
-        if transcript:
-            said = " ".join(s["text"] for s in transcript["segments"] if s["start"] <= f["t"] + 1 and s["end"] >= f["t"] - 1)
-        print(f"  t={f['t']:>5}s  {f['path']}" + (f"   | said: {said}" if said else ""))
+    print_frames(frames, transcript)
     print("\nTRANSCRIPT:")
-    if transcript and transcript["segments"]:
-        for s in transcript["segments"]:
-            print(f"  [{s['start']:>5}-{s['end']:>5}] {s['text']}")
-    else:
-        print("  (none - no speech, music only, or transcription skipped)")
+    print_transcript(transcript)
 
 
 if __name__ == "__main__":

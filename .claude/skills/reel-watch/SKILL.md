@@ -12,7 +12,7 @@ Claude can't take video as input. This skill downloads the video and then:
 
 In the reel-agent project, the main session doesn't run this itself: each reel goes to a background `reel-worker` agent (see `.claude/agents/reel-worker.md`).
 
-Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install yt-dlp imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
+Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install "yt-dlp[default,curl-cffi]" imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
 
 ## Steps
 
@@ -29,8 +29,9 @@ Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-
    python "${CLAUDE_SKILL_DIR}/scripts/reel.py" "<url-or-path>" ["<more image paths>"...]
    ```
    `${CLAUDE_SKILL_DIR}` is the folder containing this SKILL.md; Claude Code fills it in, other agents should substitute that path themselves.
-   Works for video links, local videos, Instagram photo posts (first slide only without login), and one or more
-   local images (screenshots, carousel slides). YouTube links are sent to Gemini by URL, no download needed.
+   Works for video links, local videos, Instagram photo posts and carousels (every slide, photos and videos, no
+   login; needs yt-dlp 2026.08.19 or newer), and one or more local images (screenshots, carousel slides). YouTube
+   links are sent to Gemini by URL, no download needed.
    Options: `--engine auto|gemini|local` (default auto), `--max-frames N` for the local engine (default 16; use 24-30 for dense tutorials), `--check-frames N` for Gemini (default 8), `--no-transcript`.
    Config (env var, or a `.env` file in the project root or current folder): `GEMINI_API_KEY`, `REEL_GEMINI_MODEL` (default: `gemini-3.8-flash`, then 3.7 and 3.5 Flash), `REEL_ENGINE`, `REEL_IG_COOKIES`.
    Gemini's free tier allows about 5 requests a minute and 20 a day per model. A model that runs out for the day is remembered in `reels/.gemini_quota.json` and skipped until midnight Pacific; when all are out, the local engine is used.
@@ -41,6 +42,8 @@ Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-
 4. **Look at the video.**
    - `engine: gemini`: the `GEMINI ANALYSIS` block is your main source. Read the check frames that show commands, code, URLs or repo names and quote them exactly. If Gemini and a frame disagree, trust the frame.
    - `kind: images`: Read every image in the `IMAGES` list.
+   - `kind: slides` (a carousel with video slides): Read every image in the `SLIDES` list and each video slide's frames.
+   - A `NOTE` saying only some slides could be fetched: tell the user which ones you saw.
    - `engine: local`: Read every frame path in the `FRAMES` list. Use each frame's `said:` text to connect what's on screen with what's being said.
 
 5. **Build the breakdown** from the analysis, frames, transcript and caption:

@@ -24,8 +24,11 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
    - `GEMINI ANALYSIS` present: it's your main source. Read the check frames that show commands, code, URLs or
      repo names so you can quote them exactly. If Gemini and a frame disagree, trust the frame.
    - `engine: local`: Read every frame.
-   - `kind: images`: Read every image. A `NOTE` saying only the first slide was fetched means: tell the user
-     "(only saw slide 1: send screenshots of the rest if they matter)".
+   - `kind: images`: Read every image.
+   - `kind: slides` (a carousel with video slides): Read every image in the `SLIDES` list and, per video slide, its
+     frames (with Gemini, the ones that show commands, code, URLs or repo names).
+   - A `NOTE` saying only the first slide, or only some slides, could be fetched means: tell the user which slides you
+     saw, e.g. "(only saw slide 1: send screenshots of the rest if they matter)".
 4. **Write** `breakdown.md` in `REEL_DIR`: what it is, step by step, exact names/links/commands/repos (flag unclear
    ones), what setting it up on this PC would take, and the engine line from the script output.
 5. **Reply on Telegram** with a breakdown card. Write it to `<REEL_DIR>/reply.md`, then send it formatted:

@@ -70,7 +70,7 @@ its line as the prompt. Remove connectors it doesn't need. Give it a cloud envir
 - `REEL_CLOUD_URL` = the Worker URL, as a plain environment variable;
 - an **API credential** for the Worker's hostname: header `Authorization`, prefix `Bearer`, value = your
   `BACKEND_TOKEN`. Claude's proxy adds it to requests, so the routine never sees it;
-- setup script: `python -m pip install yt-dlp faster-whisper imageio-ffmpeg`.
+- setup script: `python -m pip install "yt-dlp[default,curl-cffi]" faster-whisper imageio-ffmpeg`.
 
 Add an **API trigger**, then store its URL and token in the Worker:
 

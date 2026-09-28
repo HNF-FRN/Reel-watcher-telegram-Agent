@@ -133,7 +133,7 @@ switch ($Command.ToLower()) {
         else { Write-Host 'Use: .\bot autostart on   or   .\bot autostart off' }
     }
     'update'    {
-        python -m pip install -U yt-dlp
+        python -m pip install -U "yt-dlp[default,curl-cffi]"
         claude update
         Write-Host 'Done. Run .\bot restart so the bot uses the new versions.'
     }
