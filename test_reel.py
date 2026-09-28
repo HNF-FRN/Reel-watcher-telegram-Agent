@@ -77,7 +77,18 @@ class InstagramPost(unittest.TestCase):
     def test_missing_slides_are_reported(self):
         (kind, paths, meta), _ = self.fetch({"0.info.json": {**INFO, "playlist_count": 3}, "1.jpg": b"a", "2.jpg": b"b"})
         self.assertEqual(len(paths), 2)
-        self.assertEqual(meta["note"], "Instagram post: only 2 of its 3 slides could be downloaded")
+        self.assertEqual(meta["note"], "Instagram post: only 2 of its 3 slides could be downloaded (missing: slide 3)")
+
+    def test_slides_keep_their_own_numbers_after_a_missing_one(self):
+        (kind, paths, meta), _ = self.fetch({"0.info.json": {**INFO, "playlist_count": 3}, "2.jpg": b"b", "3.jpg": b"c"})
+        self.assertEqual((kind, [p.name for p in paths]), ("images", ["image_02.jpg", "image_03.jpg"]))
+        self.assertIn("(missing: slide 1)", meta["note"])
+
+    def test_one_surviving_video_of_a_carousel_is_still_a_carousel(self):
+        (kind, paths, meta), _ = self.fetch({"0.info.json": {**INFO, "playlist_count": 3}, "2.jpg": b"cover",
+                                             "2.mp4": b"v"})
+        self.assertEqual((kind, [p.name for p in paths]), ("slides", ["video_02.mp4"]))
+        self.assertIn("(missing: slide 1, 3)", meta["note"])
 
     def test_nothing_downloaded_raises_the_real_error(self):
         err = "ERROR: [Instagram] X: Requested content is not available, rate-limit reached or login required\n"
@@ -154,11 +165,23 @@ class Gemini(unittest.TestCase):
         self.assertIn("cap", sent["prompt"])
         self.assertEqual(deleted, [("DELETE", f"{reel.GEMINI_API}/v1beta/files/video_03")])
 
+    def test_photo_labels_only_when_a_slide_is_missing(self):
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d, True)
+        for name in ("image_01.jpg", "image_02.jpg", "image_04.jpg"):
+            (d / name).write_bytes(b"i")
+        labels = []
+        generate = lambda parts, prompt, key: (labels.append([p["text"] for p in parts if "text" in p]), "m")
+        with mock.patch.object(reel, "gemini_generate", generate):
+            reel.gemini_watch_images([d / "image_01.jpg", d / "image_02.jpg"], {}, "k")  # a whole album: unchanged
+            reel.gemini_watch_images([d / "image_01.jpg", d / "image_02.jpg", d / "image_04.jpg"], {}, "k")
+        self.assertEqual(labels, [[], ["Slide 1:", "Slide 2:", "Slide 4:"]])
+
 
 class SlidesPipeline(unittest.TestCase):
     """main() on a photo + video carousel with the local engine (needs ffmpeg or imageio-ffmpeg)."""
 
-    def test_local_engine_lists_every_slide(self):
+    def test_local_engine_lists_every_slide_with_its_number_and_shares_the_frame_budget(self):
         ff = shutil.which("ffmpeg")
         if not ff:
             try:
@@ -175,27 +198,32 @@ class SlidesPipeline(unittest.TestCase):
         subprocess.run([ff, "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=64x64:rate=10",
                         str(src / "b.mp4")], check=True)
 
-        def fake_fetch(sources, work, lowres=False):
-            paths = [work / "image_01.jpg", work / "video_02.mp4"]
-            shutil.copy(src / "a.jpg", paths[0])
-            shutil.copy(src / "b.mp4", paths[1])
+        def fake_fetch(sources, work, lowres=False):  # slide 4 of this carousel failed to download
+            paths = [work / name for name in ("image_01.jpg", "video_02.mp4", "video_03.mp4", "video_05.mp4")]
+            for p in paths:
+                shutil.copy(src / ("a.jpg" if p.suffix == ".jpg" else "b.mp4"), p)
             return "slides", paths, {"description": "caption"}, "yt-dlp"
         out = io.StringIO()
-        argv = ["reel.py", POST, "--engine", "local", "--no-transcript", "--out-root", str(root / "reels")]
+        argv = ["reel.py", POST, "--engine", "local", "--no-transcript", "--max-frames", "6",
+                "--out-root", str(root / "reels")]
         with mock.patch.object(sys, "argv", argv), mock.patch.object(reel, "fetch", fake_fetch), \
                 mock.patch.object(reel, "instagram_caption", lambda url: None), \
                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
             reel.main()
         text = out.getvalue()
         self.assertIn("kind: slides", text)
-        self.assertIn("slides: 2", text)
+        self.assertIn("slides: 4", text)
         self.assertRegex(text, r"slide 1: image  .*image_01\.jpg")
         self.assertIn("slide 2: video, 2.0s", text)
-        self.assertRegex(text, r"frames_02[/\\]001\.jpg")
+        self.assertIn("slide 5: video, 2.0s", text)
+        self.assertRegex(text, r"frames_05[/\\]001\.jpg")
         work = Path(text.split("REEL_DIR: ")[1].splitlines()[0])
         manifest = json.loads((work / "manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual([s["type"] for s in manifest["slides"]], ["image", "video"])
-        self.assertTrue(all(f["slide"] in (1, 2) for f in manifest["frames"]))
+        self.assertEqual([(s["slide"], s["type"]) for s in manifest["slides"]],
+                         [(1, "image"), (2, "video"), (3, "video"), (5, "video")])
+        per_video = [len(s["frames"]) for s in manifest["slides"] if s["type"] == "video"]
+        self.assertTrue(all(per_video), per_video)
+        self.assertLessEqual(sum(per_video), 6, "the videos share --max-frames")
 
 
 if __name__ == "__main__":

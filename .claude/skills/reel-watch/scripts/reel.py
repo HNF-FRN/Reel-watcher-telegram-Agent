@@ -166,21 +166,24 @@ def fetch_instagram_post(url, work, cookies=None):
             elif n and (ext in VIDEO_MIME or ext in IMAGE_EXT):
                 # a video slide also gets its cover image; the video wins
                 slides.setdefault(n, {})["video" if ext in VIDEO_MIME else "image"] = f
-        found = [s.get("video") or s["image"] for _, s in sorted(slides.items())]
-        if not found:
+        if not slides:
             errors = [x for x in r.stderr.splitlines() if x.strip() and "No video formats found" not in x]
             raise RuntimeError(errors[-1] if errors else "yt-dlp found no slides")
-        if len(found) == 1 and found[0].suffix.lower() in VIDEO_MIME:
-            dest = work / ("video" + found[0].suffix.lower())
-            found[0].replace(dest)
+        total = max([total, *slides])  # the info files can be missing; the slide numbers still count
+        if total == 1 and "video" in slides[1]:
+            dest = work / ("video" + slides[1]["video"].suffix.lower())
+            slides[1]["video"].replace(dest)
             return "video", [dest], meta
         paths = []
-        for i, p in enumerate(found, 1):
-            dest = work / f"{'video' if p.suffix.lower() in VIDEO_MIME else 'image'}_{i:02d}{p.suffix.lower()}"
+        for n, s in sorted(slides.items()):  # files keep the slide's own number, even after a missing one
+            p = s.get("video") or s["image"]
+            dest = work / f"{'video' if 'video' in s else 'image'}_{n:02d}{p.suffix.lower()}"
             p.replace(dest)
             paths.append(dest)
-        if len(found) < total:
-            meta["note"] = f"Instagram post: only {len(found)} of its {total} slides could be downloaded"
+        missing = [str(n) for n in range(1, total + 1) if n not in slides]
+        if missing:
+            meta["note"] = (f"Instagram post: only {len(slides)} of its {total} slides could be downloaded "
+                            f"(missing: slide {', '.join(missing)})")
         return ("images" if all(p.name.startswith("image_") for p in paths) else "slides"), paths, meta
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -280,10 +283,10 @@ def duration_of(ff, video):
     return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else None
 
 
-def extract_frames(ff, video, work, dur, max_frames, folder="frames"):
+def extract_frames(ff, video, work, dur, max_frames, folder="frames", floor=6):
     fdir = work / folder
     fdir.mkdir(exist_ok=True)
-    n = max(6, min(max_frames, math.ceil(dur / 2))) if dur else max_frames
+    n = max(floor, min(max_frames, math.ceil(dur / 2))) if dur else max_frames
     fps = n / dur if dur else 0.5
     subprocess.run([ff, "-loglevel", "error", "-i", str(video), "-vf", f"fps={fps:.5f},scale=720:-2",
                     "-q:v", "3", str(fdir / "%03d.jpg")], check=True)
@@ -314,18 +317,25 @@ def transcribe(ff, video, work, model_name):
     return None
 
 
+def slide_number(path, default):
+    """Carousel files keep their slide number (image_03.jpg), also when an earlier slide is missing."""
+    m = re.search(r"_(\d+)$", Path(path).stem)
+    return int(m.group(1)) if m else default
+
+
 def watch_slides(ff, paths, work, max_frames, want_transcript, whisper_model):
-    """A carousel with video slides: photos as they are; each video gets its own frames folder (one frame budget
-    shared by all of them) and, when asked, its own transcript."""
-    videos = sum(p.suffix.lower() in VIDEO_MIME for p in paths)
+    """A carousel with video slides: photos as they are; each video gets its own frames folder and, when asked, its
+    own transcript. The videos share one frame budget, with at least one frame each."""
+    share = max(1, max_frames // sum(p.suffix.lower() in VIDEO_MIME for p in paths))
     slides = []
     for i, p in enumerate(paths, 1):
+        n = slide_number(p, i)
         if p.suffix.lower() in IMAGE_EXT:
-            slides.append({"slide": i, "type": "image", "path": str(p)})
+            slides.append({"slide": n, "type": "image", "path": str(p)})
             continue
         dur = duration_of(ff, p)
-        slides.append({"slide": i, "type": "video", "path": str(p), "duration_sec": dur,
-                       "frames": extract_frames(ff, p, work, dur, max_frames // videos, f"frames_{i:02d}"),
+        slides.append({"slide": n, "type": "video", "path": str(p), "duration_sec": dur,
+                       "frames": extract_frames(ff, p, work, dur, share, f"frames_{n:02d}", floor=min(6, share)),
                        "transcript": transcribe(ff, p, work, whisper_model) if want_transcript else None})
     return slides
 
@@ -578,7 +588,7 @@ def gemini_watch(paths, prompt, meta, key, labels=False):
             ext = p.suffix.lower()
             mime = IMAGE_EXT.get(ext) or VIDEO_MIME.get(ext, "video/mp4")
             if labels:
-                parts.append({"text": f"Slide {i}:"})
+                parts.append({"text": f"Slide {slide_number(p, i)}:"})
             if p.stat().st_size <= room:
                 room -= p.stat().st_size
                 parts.append({"inline_data": {"mime_type": mime, "data": base64.b64encode(p.read_bytes()).decode()}})
@@ -603,7 +613,8 @@ def gemini_watch_youtube(url, key):
 
 
 def gemini_watch_images(images, meta, key):
-    return gemini_watch(images, GEMINI_PROMPT_IMAGES, meta, key)
+    gap = any(slide_number(p, i) != i for i, p in enumerate(images, 1))  # a carousel slide failed to download
+    return gemini_watch(images, GEMINI_PROMPT_IMAGES, meta, key, labels=gap)
 
 
 def gemini_watch_slides(paths, meta, key):
