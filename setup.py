@@ -81,9 +81,16 @@ def tools():
         todo("bun missing -> npm install -g bun")
 
 
+YTDLP_MIN = "2026.08.19"  # reads Instagram posts, every carousel slide, without a login
+
+
 def packages():
     step(2, "Python packages (yt-dlp, imageio-ffmpeg)")
-    missing = [mod for mod in ("yt_dlp", "imageio_ffmpeg") if run([sys.executable, "-c", f"import {mod}"]).returncode != 0]
+    missing = [mod for mod in ("yt_dlp", "curl_cffi", "imageio_ffmpeg")
+               if run([sys.executable, "-c", f"import {mod}"]).returncode != 0]
+    have = run([sys.executable, "-c", "from yt_dlp.version import __version__; print(__version__)"]).stdout.strip()
+    if have and have < YTDLP_MIN:  # same YYYY.MM.DD format, so text order is date order
+        missing.append(f"yt-dlp {YTDLP_MIN} (you have {have})")
     if run([sys.executable, "-c", "import faster_whisper"]).returncode != 0:
         say("    optional: python -m pip install faster-whisper (transcripts when Gemini is off)")
     if not missing:
@@ -92,7 +99,7 @@ def packages():
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")])
         (ok if r.returncode == 0 else todo)("installed" if r.returncode == 0 else "pip install failed")
     else:
-        todo("install packages: python -m pip install -r requirements.txt")
+        todo(f"install packages ({', '.join(missing)}): python -m pip install -r requirements.txt")
 
 
 def telegram():

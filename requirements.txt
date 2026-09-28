@@ -1,3 +1,4 @@
 # Reel downloads and a bundled ffmpeg. Optional: faster-whisper, for transcripts when Gemini is off
-yt-dlp
+# yt-dlp 2026.08.19+ reads Instagram posts (every carousel slide) without a login; curl-cffi is how it asks
+yt-dlp[default,curl-cffi]>=2026.8.19
 imageio-ffmpeg

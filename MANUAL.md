@@ -127,7 +127,7 @@ The `~$` figure on build messages is the API-equivalent cost of that build. On a
 | `/rewatch 4 deep` | Watch it again more carefully (more frames). `/rewatch 4 local` skips Gemini. |
 | `/digest` | The weekly summary now. It also arrives by itself on **Sundays at 10:00**. |
 
-If a download fails: open the reel → Share → Download, and send the bot the video file. For photo carousels only the first slide can be fetched, so send screenshots of the rest.
+Photo posts and carousels work too: the bot fetches every slide (photos and videos) without a login. If a download fails: open the reel → Share → Download, and send the bot the video file (for a post, screenshots of the slides). If the bot only saw the first slide, run `.\bot update` to get the latest yt-dlp.
 
 ---
 

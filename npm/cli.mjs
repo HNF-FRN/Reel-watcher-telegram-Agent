@@ -317,9 +317,9 @@ async function watch(sources) {
   if (!py) { fail(`Python 3.10+ is needed: ${IS_WIN ? "winget install Python.Python.3.13" : "https://www.python.org/downloads/"}`); return 1; }
   const missing = ["yt_dlp", "imageio_ffmpeg"].filter((m) => run(py.exe, [...py.pre, "-c", `import ${m}`]).code !== 0);
   if (missing.length) {
-    if (await ask(`Install the video downloader and ffmpeg (pip install yt-dlp imageio-ffmpeg)?`)) {
-      run(py.exe, [...py.pre, "-m", "pip", "install", "--user", "yt-dlp", "imageio-ffmpeg"], { inherit: true });
-    } else { fail("Needed: pip install yt-dlp imageio-ffmpeg"); return 1; }
+    if (await ask(`Install the video downloader and ffmpeg (pip install "yt-dlp[default,curl-cffi]" imageio-ffmpeg)?`)) {
+      run(py.exe, [...py.pre, "-m", "pip", "install", "--user", "yt-dlp[default,curl-cffi]>=2026.8.19", "imageio-ffmpeg"], { inherit: true });
+    } else { fail('Needed: pip install "yt-dlp[default,curl-cffi]" imageio-ffmpeg'); return 1; }
   }
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY && !fs.existsSync(path.resolve(".env"))) {
     say(dim("  Tip: set GEMINI_API_KEY (free at aistudio.google.com/apikey) so Gemini watches it with sound."));

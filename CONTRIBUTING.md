@@ -27,6 +27,7 @@ Thanks for helping. Reel Agent is small and readable on purpose: plain Python sc
 ```powershell
 python test_setup.py
 python test_messages.py
+python test_reel.py
 python -m unittest discover -s cloud -p "test_*.py"
 cd cloud; npm install; npm test
 ```
