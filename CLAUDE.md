@@ -44,7 +44,7 @@ Commands are Telegram messages starting with `/` (the "/" menu lists them). Plai
 | `/menu` | Send the command card at the bottom of this file with `T`. |
 | `/jobs` | `J list` (short version). |
 | `/r N` [`full`] | Short breakdown card of #N from its `breakdown.md` (same layout as the worker's), sent with `T`; `full` → attach the file. |
-| `/deeper N` | Research #N: start a research agent (see Go deeper). Same as the old reply "N 3". |
+| `/deeper N` | Research #N: start a research agent (see Go deeper). |
 | `/find words` | `J search words`. |
 | `/saved` | `J list --status saved`. |
 | `/tag N a,b` | `J tag N --tags a,b`. |
@@ -55,7 +55,7 @@ Commands are Telegram messages starting with `/` (the "/" menu lists them). Plai
 | `/digest` | `M digest` and send the text. |
 | `/manual` | Reply with `MANUAL.md` attached. |
 
-Old replies still work: `N 1` = `/plan N`, `N 2` = `/save N`, `N 3` = `/deeper N`.
+Number shortcuts: `N 1` = `/plan N`, `N 2` = `/save N`, `N 3` = `/deeper N`.
 
 **Free-text replies:** a message that starts with a number and continues in words (`1 go find the repo yourself`, `#4 is this legit?`, `2 make it a skill`) means: reel #N, and the words are the user's own instruction. Do what the words say for that reel: research requests go to a background research agent, "build/make/set it up" goes to `/plan` or `/build` with the words as `--note`, and a question gets a short answer from its breakdown. Only a lone digit after the number (`4 1`) is a menu shortcut.
 
@@ -125,7 +125,7 @@ Start a background `general-purpose` agent with `model` = the `research` model f
 **Next**
 /plan N  plan it  ·  /save N  keep  ·  /dismiss N  skip
 ```
-Under ~900 characters; the full `research.md` goes as an attachment with the `reply` tool. It must not install anything.
+Keep it to one phone screen; the full `research.md` goes as an attachment with the `reply` tool. It must not install anything.
 
 ## Permission prompts
 

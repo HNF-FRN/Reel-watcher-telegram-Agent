@@ -47,7 +47,7 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
    /plan N  plan it  ·  /build N  build it
    /save N  keep  ·  /dismiss N  skip  ·  /deeper N  research it
    ```
-   Keep it under ~900 characters, no paragraph over two lines, no tables. If Gemini's daily quota was used up, add
+   Keep it to one phone screen, no paragraph over two lines, no tables. If Gemini's daily quota was used up, add
    a last line in italics: `*Gemini's free quota is used up today, so the backup watcher did this one.*`
    If `tg.py` fails, send the same text with the `reply` tool instead.
 6. **Record it:** `python .claude/skills/reel-watch/scripts/jobs.py done N --dir "<REEL_DIR>" --summary "<one line>" --tags "<2-4 tags>" --engine "<gemini|local>" --reply-msg <the SENT id>`
