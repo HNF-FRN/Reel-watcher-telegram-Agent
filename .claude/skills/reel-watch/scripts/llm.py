@@ -88,13 +88,15 @@ def resolve(model=None):
     return _resolved[key][1]
 
 
-def chat(messages, cfg, tools=None, temperature=0.2, max_tokens=None, timeout=900):
+def chat(messages, cfg, tools=None, temperature=0.2, max_tokens=None, timeout=900, frequency_penalty=None):
     """One chat completion. Returns the assistant message: {"role", "content", "tool_calls"?}."""
     body = {"model": cfg["model"], "messages": messages, "temperature": temperature, "stream": False}
     if tools:
         body["tools"] = tools
     if max_tokens:
         body["max_tokens"] = max_tokens
+    if frequency_penalty is not None:  # keeps small models from looping on one line
+        body["frequency_penalty"] = frequency_penalty
     data = request("POST", cfg["url"] + "/chat/completions", cfg["key"], body, timeout)
     try:
         return data["choices"][0]["message"]
