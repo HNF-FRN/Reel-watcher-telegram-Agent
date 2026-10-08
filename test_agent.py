@@ -30,15 +30,15 @@ def call(name, **args):
 
 
 class FakeModel:
-    """POST /v1/chat/completions answers with the next scripted message; GET /v1/models lists one model."""
+    """POST /v1/chat/completions answers with the next scripted message; GET /v1/models lists the models."""
 
-    def __init__(self, replies):
+    def __init__(self, replies, models=("fake-coder",)):
         self.replies, self.requests = list(replies), []
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
-                self.reply({"object": "list", "data": [{"id": "fake-coder"}]})
+                self.reply({"object": "list", "data": [{"id": m} for m in models]})
 
             def do_POST(self):
                 fake.requests.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
@@ -153,6 +153,15 @@ class Agent(unittest.TestCase):
         bot = agent.Agent(self.root, lambda m, t: llm.chat(m, fake.cfg, tools=t), lambda *a: (True, ""), max_steps=3)
         self.assertIsNone(bot.run([{"role": "user", "content": "go"}]))
         self.assertEqual(bot.unfinished, "3 steps without finishing")
+
+    def test_builds_pick_a_model_that_can_call_tools(self):
+        fake = FakeModel([], models=["qwen2.5vl:7b", "qwen3:8b", "nomic-embed-text"])
+        self.addCleanup(fake.close)
+        with mock.patch.dict(os.environ, {"REEL_LLM_URL": fake.cfg["url"], "REEL_LLM_MODEL": "", "REEL_LLM": "",
+                                          "REEL_LLM_VISION": ""}):
+            self.assertEqual(llm.resolve()["model"], "qwen2.5vl:7b", "watching: a vision model reads the frames")
+            self.assertEqual(llm.resolve(tools=True)["model"], "qwen3:8b", "builds: one that can call tools")
+            self.assertEqual(llm.resolve("llama3.1:8b", tools=True)["model"], "llama3.1:8b", "a name wins")
 
     def test_old_tool_output_is_trimmed_for_small_models(self):
         bot = agent.Agent(self.root, None, None, max_chars=3000)
