@@ -40,6 +40,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+import wave
 from datetime import datetime
 from pathlib import Path
 
@@ -304,14 +305,19 @@ def transcribe(ff, video, work, model_name):
     if r.returncode != 0 or not wav.exists():
         return None
     try:
+        import numpy as np
         from faster_whisper import WhisperModel
     except ImportError:
         log("faster-whisper not installed; skipping transcript")
         return None
+    # Whisper gets the 16 kHz samples ffmpeg already made, not the file: newer PyAV releases break
+    # faster-whisper's own decoding ("unexpected keyword argument 'metadata_errors'").
+    with wave.open(str(wav), "rb") as w:
+        audio = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768.0
     for device, ctype in (("cuda", "float16"), ("cpu", "int8")):
         try:
             model = WhisperModel(model_name, device=device, compute_type=ctype)
-            segs, info = model.transcribe(str(wav), vad_filter=True)
+            segs, info = model.transcribe(audio, vad_filter=True)
             segs = [{"start": round(s.start, 1), "end": round(s.end, 1), "text": s.text.strip()} for s in segs]
             log(f"transcribed on {device}")
             wav.unlink(missing_ok=True)
