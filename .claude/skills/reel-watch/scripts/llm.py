@@ -66,14 +66,15 @@ def is_vision(model):
     return any(h in (model or "").lower() for h in VISION_HINTS)
 
 
-def resolve(model=None):
-    """Settings with a model picked, or None when no server answers (or it has no chat model). The answer is
-    kept for a minute, so a long-running bot notices when Ollama is started later."""
+def resolve(model=None, tools=False):
+    """Settings with a model picked, or None when no server answers (or it has no chat model). Picking by itself,
+    it prefers a vision model for watching, and for builds (tools=True) one without vision: small vision models
+    often can't call tools. The answer is kept for a minute, so a long-running bot notices when Ollama starts."""
     cfg = config()
     if not cfg:
         return None
     want = model or cfg["model"]
-    key = (cfg["url"], want)
+    key = (cfg["url"], want, tools)
     if key not in _resolved or time.time() - _resolved[key][0] > 60:
         ids = list_models(cfg)
         chat = [i for i in ids or [] if "embed" not in i.lower()]
@@ -83,7 +84,8 @@ def resolve(model=None):
             found = {**cfg, "model": want}  # trust the name: some servers list models differently
         else:
             vision = [i for i in chat if is_vision(i)]
-            found = {**cfg, "model": (vision or chat)[0]} if chat else None
+            plain = [i for i in chat if not is_vision(i)]
+            found = {**cfg, "model": ((plain if tools else vision) or chat)[0]} if chat else None
         _resolved[key] = (time.time(), found)
     return _resolved[key][1]
 
