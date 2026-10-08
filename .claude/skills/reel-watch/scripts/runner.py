@@ -437,7 +437,7 @@ class Runner:
         kept in .reel/local_history.json, so /tell and /resume continue it."""
         import agent  # noqa: PLC0415 - only local runs need it
         import llm  # noqa: PLC0415
-        cfg = llm.resolve(self.state["model"].partition(":")[2] or None)
+        cfg = llm.resolve(self.state["model"].partition(":")[2] or None, tools=True)
         if not cfg:
             url = (llm.config() or {}).get("url", "REEL_LLM_URL")
             raise RuntimeError(f"no model server answered at {url}. Start Ollama with a model that can use tools "
@@ -506,12 +506,12 @@ class Runner:
         meta = f"{model} · {mins} min{cost}"
         if self.stopped_reason:
             status = "stopped"
-            self.notify(f"⏹ **#{n} {kind} stopped** · {meta}\n{self.stopped_reason}\n\n"
-                        f"/resume {n}  carry on\n/peek {n}  where it got to\n/diff {n}  what changed so far")
+            text = (f"⏹ **#{n} {kind} stopped** · {meta}\n{self.stopped_reason}\n\n"
+                    f"/resume {n}  carry on\n/peek {n}  where it got to\n/diff {n}  what changed so far")
         elif (self.last_result or {}).get("is_error") or not self.last_result:
             status = "failed"
             detail = f"\n```\n{res[:800]}\n```" if res.strip() else ""
-            self.notify(f"❌ **#{n} {kind} failed** · {meta}{detail}\n\n/log {n}  full log\n/resume {n}  try again")
+            text = f"❌ **#{n} {kind} failed** · {meta}{detail}\n\n/log {n}  full log\n/resume {n}  try again"
         elif is_plan:
             status = "plan-ready"
             plan = self.state.get("plan_text") or res
@@ -520,19 +520,21 @@ class Runner:
             cut = f"\n\n*Cut short here. /log {n} sends the whole plan.*" if len(plan) > 3300 else ""
             other = "" if is_local(self.state["model"]) else \
                 f"/build {n} opus  build it with Opus\n/plan {n} opus  plan again with Opus\n"
-            self.notify(f"📋 **#{n} plan ready** · {meta}\n\n{plan[:3300]}{cut}\n\n**Next**\n"
-                        f"/build {n}  build it\n{other}/tell {n} <changes>  change the plan")
+            text = (f"📋 **#{n} plan ready** · {meta}\n\n{plan[:3300]}{cut}\n\n**Next**\n"
+                    f"/build {n}  build it\n{other}/tell {n} <changes>  change the plan")
         elif re.search(r"^QUESTION:", res, re.M):
             status = "question"
             q = re.search(r"^QUESTION:(.*)$", res, re.M).group(1).strip()
-            self.notify(f"❓ **#{n} has a question**\n{q}\n\nAnswer with /tell {n} <your answer>")
+            text = f"❓ **#{n} has a question**\n{q}\n\nAnswer with /tell {n} <your answer>"
         else:
             status = "done"
             deploy = f"\n/deploy {n}  install it" if (self.dir / "deploy.json").exists() else ""
-            self.notify(f"✅ **#{n} build done** · {meta}\n\n{res[:2500]}\n\n**Next**\n"
-                        f"/diff {n}  see what changed{deploy}\n/undo {n}  throw it away\n/tell {n} <changes>  ask for changes")
+            text = (f"✅ **#{n} build done** · {meta}\n\n{res[:2500]}\n\n**Next**\n"
+                    f"/diff {n}  see what changed{deploy}\n/undo {n}  throw it away\n/tell {n} <changes>  ask for changes")
         self.log(f"🏁 {status} after {mins} min")
+        # the state is final before the phone hears about it, so a /build tapped right away finds the run over
         self.save(status=status, ended=now(), runner_pid=None, claude_pid=None)
+        self.notify(text)
 
 
 def main():
