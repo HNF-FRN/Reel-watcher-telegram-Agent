@@ -64,7 +64,8 @@ jobs:
           path: e2e-out
 
   open-models:
-    # Same video, plus an open-weight model served by Ollama on the runner's CPU.
+    # Same video, plus an open-weight model served by Ollama on the runner's CPU: it writes the summary, then
+    # builds a small script through runner.py (the /build N local path) while the test approves each command.
     name: Open models end to end (Ollama)
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -73,7 +74,7 @@ jobs:
       PYTHONUTF8: "1"
       REEL_E2E: "1"
       REEL_OCR: tesseract
-      REEL_LLM_MODEL: qwen2.5:1.5b
+      REEL_LLM_MODEL: qwen2.5:3b
       REEL_E2E_OUT: ${{ github.workspace }}/e2e-out
     steps:
       - uses: actions/checkout@v5
