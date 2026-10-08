@@ -99,6 +99,13 @@ class Breakdown(unittest.TestCase):
         self.assertIn("Its steps were unusable", self.section(md, "Notes"))
         self.assertEqual(info["llm"], "qwen2.5vl:7b")
 
+    def test_steps_must_fit_the_video(self):
+        # qwen2.5:3b in CI added "Slide 4:" steps to a video with no slides
+        steps = ("- [0:01] Runs the install command.\n2. [0:05] Opens the repo.\nSlide 3: The speaker repeats it.\n"
+                 "- [9:59] Something after the end.")
+        md, _ = self.run_it(lambda *a, **k: {"content": f"## Summary\nA demo.\n\n## Step by step\n{steps}"})
+        self.assertEqual(self.section(md, "Step by step"), "- [0:01] Runs the install command.\n2. [0:05] Opens the repo.")
+
     def test_a_model_that_only_pastes_the_input_is_not_used(self):
         md, info = self.run_it(lambda *a, **k: {"content": "SPOKEN: x\nSPOKEN: y\nSPOKEN: z"})
         self.assertEqual(self.section(md, "Summary"), "3 skills you need. Comment SKILLS for the list")
