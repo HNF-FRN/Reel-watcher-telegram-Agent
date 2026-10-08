@@ -1,0 +1,7 @@
+# The open engine's optional parts: everything stays on this computer, no account or API key.
+# reel.py works without them too, with less detail (the breakdown says what is missing).
+faster-whisper   # transcript of the voice over (MIT; models download once from Hugging Face)
+rapidocr         # reads the text on screen (Apache-2.0; ONNX models on the CPU)
+onnxruntime      # runs RapidOCR's models
+# For a written summary and for builds with open models, also run a local model server: Ollama
+# (https://ollama.com, `ollama pull qwen2.5vl:7b`), llama.cpp, LM Studio or vLLM. See .env.example.
