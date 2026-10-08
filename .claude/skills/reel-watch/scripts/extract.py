@@ -153,6 +153,11 @@ def repo_of(url):
     return f"{m.group(1).lower()}/{m.group(2)}/{re.sub(r'[.]git$', '', m.group(3))}"
 
 
+def bare_host(link):
+    """github.com alone, with no owner or page: nothing worth keeping ("go to github.com slash ...")."""
+    return re.sub(r"^(?:https?://)?(?:www\.)?", "", link.lower()).rstrip("/") in REPO_HOSTS
+
+
 def covered(link, repos):
     """True when a repo line already says what this link says."""
     low = link.lower().rstrip("/")
@@ -271,6 +276,8 @@ def find_all(texts):
         text = ocr_fixes(spoken(text) if speech else text, screen=where.startswith(SCREEN))
         for raw in URL_RE.findall(text):
             url = trim(raw)
+            if bare_host(url):
+                continue
             found.add("links", url, where)
             r = repo_of(url)
             if r:
@@ -279,6 +286,8 @@ def find_all(texts):
             if len(m.group(1)) < 4 or re.fullmatch(r"[\d.]+", m.group(1)):
                 continue
             link = m.group(1).lower() + trim(m.group(2) or "")
+            if bare_host(link):
+                continue
             found.add("links", link, where)
             r = repo_of(link)
             if r:
