@@ -162,9 +162,12 @@ def is_local(model):
 
 
 def load_env(path=None):
-    """KEY=value lines of the project's .env into os.environ, never overriding what is already set."""
+    """KEY=value lines of the project's .env into os.environ, never overriding what is already set. Reads the
+    UTF-16 that Windows PowerShell's `>>` writes, too."""
     path = Path(path or ROOT / ".env")
-    for line in path.read_text(encoding="utf-8").splitlines() if path.exists() else []:
+    raw = path.read_bytes() if path.exists() else b""
+    text = raw.decode("utf-16") if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else raw.decode("utf-8-sig", "replace")
+    for line in text.splitlines():
         k, sep, v = line.partition("=")
         k = k.strip()
         if sep and k and not k.startswith("#") and k not in os.environ:
