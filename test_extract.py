@@ -80,6 +80,15 @@ class Links(unittest.TestCase):
                               ("caption", "(see https://github.com/a/b)")])
         self.assertEqual(values(f, "links"), ["https://docs.example.dev/start", "https://github.com/a/b"])
 
+    def test_links_split_by_ocr_spaces_are_repaired(self):
+        # exactly what Tesseract read from a monospace screen in CI
+        f = extract.find_all([("screen 0:05", "Repo:\ngithub. com/HNF -FRN/Reel-watcher-telegram-Agent")])
+        self.assertEqual(values(f, "repos"), ["github.com/HNF-FRN/Reel-watcher-telegram-Agent"])
+        f = extract.find_all([("screen 0:06", "github.com/a/b - it's free"), ("caption", "see github. com/x/y")])
+        self.assertEqual(values(f, "repos"), ["github.com/a/b"], "a spaced dash stays, captions are left as written")
+        f = extract.find_all([("screen 0:07", "curl -fsSL https://example.com/install.sh | sh")])
+        self.assertEqual(values(f, "commands"), ["curl -fsSL https://example.com/install.sh | sh"])
+
     def test_same_repo_from_two_places_is_one_item(self):
         f = extract.find_all([("screen 0:04", "github.com/a/b"), ("caption", "https://github.com/a/b")])
         self.assertEqual(f["repos"], [{"value": "github.com/a/b", "where": ["screen 0:04", "caption"]}])
