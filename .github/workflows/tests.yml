@@ -85,6 +85,7 @@ jobs:
       - name: Install Ollama and a small open-weight model
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:11434/api/version && break; sleep 2; done
           ollama pull "$REEL_LLM_MODEL"
       - run: python -m unittest test_open_core_e2e -v
       - uses: actions/upload-artifact@v4
