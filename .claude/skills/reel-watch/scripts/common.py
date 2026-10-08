@@ -2,7 +2,10 @@
 import ctypes
 import json
 import os
+import re
 import shutil
+import signal
+import subprocess
 import sys
 import time
 import urllib.error
@@ -15,16 +18,19 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 ROOT = SCRIPTS.parents[3]                      # the project folder
-REELS = ROOT / "reels"
-BUILDS = ROOT.parent / "builds"                # "builds" next to the project (outside it on purpose:
-                                               # a build inside would inherit the bots CLAUDE.md)
+# REEL_HOME keeps the library and the builds somewhere else (a server, a test). By default reels/ is in the
+# project and builds/ next to it: outside it on purpose, a build inside would inherit the bot's CLAUDE.md.
+HOME_DIR = Path(os.environ["REEL_HOME"]).expanduser().resolve() if os.environ.get("REEL_HOME") else None
+REELS = (HOME_DIR or ROOT) / "reels"
+BUILDS = HOME_DIR / "builds" if HOME_DIR else ROOT.parent / "builds"
 CONFIG = REELS / "config.json"
 GEMINI_USAGE = REELS / ".gemini_usage.json"
 CLAUDE_USAGE = REELS / ".claude_usage.json"
-TG_DIR = Path.home() / ".claude" / "channels" / "telegram"
+TG_DIR = Path(os.environ.get("TELEGRAM_STATE_DIR") or Path.home() / ".claude" / "channels" / "telegram")
 
 CLAUDE_MODELS = ("haiku", "sonnet", "opus", "fable")
-BUILD_MODELS = CLAUDE_MODELS + ("codex",)
+BUILD_MODELS = CLAUDE_MODELS + ("codex", "local")  # local = agent.py with an open model (llm.py)
+NO_WINDOW = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW; Popen refuses creationflags elsewhere
 TASKS = ("watch", "research", "plan", "build")
 MODES = ("safe", "normal")  # shell commands always need the user's OK (or an /always rule)
 GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash"]
@@ -150,6 +156,43 @@ def clean_env():
     return {k: v for k, v in os.environ.items() if k.upper() not in SESSION_VARS}
 
 
+def is_local(model):
+    """"local" or "local:<model name>": a plan or build by agent.py with an open model."""
+    return str(model) == "local" or str(model).startswith("local:")
+
+
+def load_env(path=None):
+    """KEY=value lines of the project's .env into os.environ, never overriding what is already set."""
+    path = Path(path or ROOT / ".env")
+    for line in path.read_text(encoding="utf-8").splitlines() if path.exists() else []:
+        k, sep, v = line.partition("=")
+        k = k.strip()
+        if sep and k and not k.startswith("#") and k not in os.environ:
+            os.environ[k] = v.strip().strip('"').strip("'")
+
+
+def background():
+    """Popen arguments for a child that must outlive its parent without flashing a window. Off Windows it gets
+    its own process group, so kill_tree can stop it with everything it started."""
+    return {"creationflags": NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
+
+
+def kill_tree(pid):
+    """Stop a process and its children (a build's shell commands)."""
+    if not pid:
+        return
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, creationflags=NO_WINDOW)
+        return
+    try:
+        if os.getpgid(pid) == pid:  # started with background(): stop its whole group
+            os.killpg(pid, signal.SIGKILL)
+        else:
+            os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
 def find_exe(name):
     """Full path to claude / codex / bun. PATH first, then their usual install folders: Windows can start
     programs at login with a cut-off PATH that leaves these out, and a bare name would then fail."""
@@ -184,14 +227,27 @@ def pid_alive(pid):
     return bool(ok) and code.value == 259  # STILL_ACTIVE
 
 
-# ---------------------------------------------------------------- Telegram (outbound only)
+# ---------------------------------------------------------------- Telegram
 def _token():
+    if os.environ.get("TELEGRAM_BOT_TOKEN"):
+        return os.environ["TELEGRAM_BOT_TOKEN"].strip()
     env = TG_DIR / ".env"
     for row in env.read_text(encoding="utf-8").splitlines() if env.exists() else []:
         k, _, v = row.partition("=")
         if k.strip() == "TELEGRAM_BOT_TOKEN":
             return v.strip().strip('"')
     return None
+
+
+def tg_base():
+    """The Bot API server: Telegram's, or a local one (REEL_TG_API, also used by the tests)."""
+    return os.environ.get("REEL_TG_API", "https://api.telegram.org").rstrip("/")
+
+
+def dry_log(line):
+    REELS.mkdir(parents=True, exist_ok=True)
+    with open(REELS / ".tg_dryrun.log", "a", encoding="utf-8") as f:
+        f.write(f"--- {now()} {line}\n")
 
 
 def tg_chats():
@@ -203,8 +259,7 @@ def tg_send(text, chat_id=None, reply_to=None):
     commands become one tap. Falls back to plain text if Telegram rejects the markup. Returns the first message id
     (truthy) if it went out, else None."""
     if os.environ.get("REEL_TG_DRYRUN"):  # tests: log instead of messaging the phone
-        with open(REELS / ".tg_dryrun.log", "a", encoding="utf-8") as f:
-            f.write(f"--- {now()} to {chat_id or 'owner'}\n{text}\n")
+        dry_log(f"to {chat_id or 'owner'}\n{text}")
         return True
     import tgfmt  # noqa: PLC0415 - next to this file
     token = _token()
@@ -236,12 +291,51 @@ def tg_send(text, chat_id=None, reply_to=None):
     return first
 
 
-def tg_api(method, params):
+def tg_api(method, params, timeout=30):
     token = _token()
     body = json.dumps(params).encode()
-    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}", body,
-                                 {"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req, timeout=30))
+    req = urllib.request.Request(f"{tg_base()}/bot{token}/{method}", body, {"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r)
+
+
+def tg_send_file(path, chat_id=None, caption=None):
+    """Send a file (a breakdown, a log, a diff) as a document. Returns True if it went out."""
+    path = Path(path)
+    if os.environ.get("REEL_TG_DRYRUN"):
+        dry_log(f"file to {chat_id or 'owner'}: {path.name}")
+        return True
+    token, chats = _token(), [chat_id] if chat_id else tg_chats()
+    if not token or not chats or not path.is_file():
+        return False
+    name = re.sub(r'[\r\n"\\]', "_", path.name)
+    sent = False
+    for chat in chats:
+        boundary = uuid.uuid4().hex
+        fields = {"chat_id": str(chat), **({"caption": caption[:1000]} if caption else {})}
+        body = b"".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+                        for k, v in fields.items())
+        body += (f'--{boundary}\r\nContent-Disposition: form-data; name="document"; filename="{name}"\r\n'
+                 "Content-Type: application/octet-stream\r\n\r\n").encode() + path.read_bytes() + \
+            f"\r\n--{boundary}--\r\n".encode()
+        req = urllib.request.Request(f"{tg_base()}/bot{token}/sendDocument", body,
+                                     {"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                sent = bool(json.load(r).get("ok")) or sent
+        except Exception as e:
+            print(f"telegram file send failed: {e}", file=sys.stderr)
+    return sent
+
+
+def tg_download(file_id, folder):
+    """Save a Telegram attachment (the Bot API serves files up to 20 MB) and return its path."""
+    remote = tg_api("getFile", {"file_id": file_id})["result"]["file_path"]
+    dest = Path(folder) / f"{uuid.uuid4().hex[:8]}_{Path(remote).name}"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(f"{tg_base()}/file/bot{_token()}/{remote}", timeout=300) as r, open(dest, "wb") as f:
+        shutil.copyfileobj(r, f)
+    return dest
 
 
 # ---------------------------------------------------------------- usage tracking
