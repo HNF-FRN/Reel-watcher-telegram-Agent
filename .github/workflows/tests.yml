@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python:
     name: Python tests (${{ matrix.os }})
@@ -19,8 +23,8 @@ jobs:
     env:
       PYTHONUTF8: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
@@ -29,15 +33,75 @@ jobs:
       - name: Approval hook tests
         run: python -m unittest discover -s cloud -p "test_approve.py" -v
 
+  open-engine:
+    # The whole watch pipeline on a generated video, with no API key and no cloud service: ffmpeg, Whisper,
+    # OCR and the extraction of commands and repos. The breakdown it writes is uploaded as an artifact.
+    name: Open engine end to end (${{ matrix.ocr }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: ${{ matrix.ocr == 'rapidocr' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ocr: [tesseract, rapidocr]
+    env:
+      PYTHONUTF8: "1"
+      REEL_E2E: "1"
+      REEL_OCR: ${{ matrix.ocr }}
+      REEL_E2E_OUT: ${{ github.workspace }}/e2e-out
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng tesseract-ocr fonts-dejavu-core
+      - run: python -m pip install -r requirements.txt -r requirements-open.txt
+      - run: python -m unittest test_open_core_e2e -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: open-engine-breakdown-${{ matrix.ocr }}
+          path: e2e-out
+
+  open-models:
+    # Same video, plus an open-weight model served by Ollama on the runner's CPU.
+    name: Open models end to end (Ollama)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    env:
+      PYTHONUTF8: "1"
+      REEL_E2E: "1"
+      REEL_OCR: tesseract
+      REEL_LLM_MODEL: qwen2.5:1.5b
+      REEL_E2E_OUT: ${{ github.workspace }}/e2e-out
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng tesseract-ocr fonts-dejavu-core
+      - run: python -m pip install -r requirements.txt faster-whisper
+      - name: Install Ollama and a small open-weight model
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama pull "$REEL_LLM_MODEL"
+      - run: python -m unittest test_open_core_e2e -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: open-models-breakdown
+          path: e2e-out
+
   cloud:
     name: Cloud stand-in tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
       - run: npm ci
@@ -51,8 +115,12 @@ jobs:
     name: npm CLI tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
       - run: node copy-py.mjs && npm test
