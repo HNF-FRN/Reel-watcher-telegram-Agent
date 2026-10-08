@@ -1,8 +1,12 @@
-"""End to end: the open engine watches a generated "reel" (commands on screen, a spoken link) with no API key and
-no cloud service: ffmpeg frames, faster-whisper, OCR, and a local model if REEL_LLM_MODEL names one.
+"""End to end with no API key and no cloud service:
+  - the open engine watches a generated "reel" (commands on screen, a spoken link): ffmpeg frames, faster-whisper,
+    OCR, and a local model if REEL_LLM_MODEL names one;
+  - with REEL_LLM_MODEL set, an open model also builds a small script through runner.py, the same way /build N local
+    does, while the test plays the user and approves each command.
 
-Skipped unless REEL_E2E=1: it needs ffmpeg (with drawtext), espeak-ng, an OCR engine and faster-whisper.
-CI runs it on every push and uploads the breakdown it wrote (.github/workflows/tests.yml).
+Skipped unless REEL_E2E=1: it needs ffmpeg (with drawtext), espeak-ng, an OCR engine and faster-whisper (and for the
+build, a model on Ollama that can call tools). CI runs it on every push and uploads what it wrote
+(.github/workflows/tests.yml).
     REEL_E2E=1 python test_open_core_e2e.py
 """
 import json
@@ -12,11 +16,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 REEL = ROOT / ".claude" / "skills" / "reel-watch" / "scripts" / "reel.py"
+RUNNER = REEL.with_name("runner.py")
 SCREENS = ["npx skills add vercel-labs/agent-skills", "Repo:\ngithub.com/HNF-FRN/Reel-watcher-telegram-Agent"]
 SPEECH = ("Here are the agent skills I install on every project. "
           "Then open github dot com slash ollama slash ollama to run the models on your own computer.")
@@ -91,7 +97,58 @@ class OpenEngine(unittest.TestCase):
             self.assertIn(section, self.local)
         if os.environ.get("REEL_LLM_MODEL"):
             self.assertIn(os.environ["REEL_LLM_MODEL"], self.manifest["engine"], "the local model wrote the summary")
-            self.assertIn("Summary and steps written by", self.local)
+            self.assertIn(f"written by {os.environ['REEL_LLM_MODEL']}", self.local)
+
+
+def read_state(folder):
+    try:
+        return json.loads((folder / ".reel" / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):  # being rewritten right now
+        return {}
+
+
+@unittest.skipUnless(os.environ.get("REEL_E2E") == "1" and os.environ.get("REEL_LLM_MODEL"),
+                     "set REEL_E2E=1 and REEL_LLM_MODEL (a model on Ollama that can call tools)")
+class OpenModelBuild(unittest.TestCase):
+    """A build by an open model through runner.py, no Claude involved. The test plays the user: it answers every
+    🔐 request with /yes, the way the phone would."""
+
+    def test_an_open_model_builds_and_runs_a_script(self):
+        home = Path(tempfile.mkdtemp())
+        build = home / "builds" / "1-hello"
+        (build / ".reel").mkdir(parents=True)
+        subprocess.run(["git", "init", "-q", str(build)], check=True)
+        (build / ".reel" / "state.json").write_text(json.dumps({
+            "job": 1, "kind": "build", "model": "local", "mode": "normal", "chat_id": "1", "limit_min": 20}),
+            encoding="utf-8")
+        task = build / ".reel" / "task.txt"
+        task.write_text("Create hello.py that prints exactly: hello from an open model\n"
+                        "Then run it with `python hello.py` to check that it works.", encoding="utf-8")
+        env = {**os.environ, "REEL_HOME": str(home), "REEL_TG_DRYRUN": "1", "PYTHONUTF8": "1"}
+        proc = subprocess.Popen([sys.executable, str(RUNNER), str(build), str(task)], env=env)
+        answers, end = 0, time.time() + 1500
+        answer = build / ".reel" / "answer.json"
+        while proc.poll() is None and time.time() < end:
+            if read_state(build).get("pending") and not answer.exists():
+                tmp = answer.with_suffix(".tmp")
+                tmp.write_text(json.dumps({"decision": "yes", "reason": None, "at": "e2e"}), encoding="utf-8")
+                os.replace(tmp, answer)  # /yes 1
+                answers += 1
+            time.sleep(1)
+        if proc.poll() is None:
+            proc.kill()
+        log = (build / ".reel" / "log.md").read_text(encoding="utf-8") if (build / ".reel" / "log.md").exists() else ""
+        print(f"\n===== build log ({answers} commands approved) =====\n{log}\n=====")
+        if os.environ.get("REEL_E2E_OUT"):
+            out = Path(os.environ["REEL_E2E_OUT"]) / "open-model-build"
+            shutil.copytree(build, out, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git"))
+        state = read_state(build)
+        self.assertEqual(state.get("status"), "done", log[-3000:])
+        self.assertTrue((build / "hello.py").exists(), log[-3000:])
+        ran = subprocess.run([sys.executable, str(build / "hello.py")], capture_output=True, text=True, timeout=60)
+        self.assertIn("hello from an open model", ran.stdout.lower())
+        commits = subprocess.run(["git", "-C", str(build), "log", "--oneline"], capture_output=True, text=True).stdout
+        self.assertIn("#1 run 1: build", commits)
 
 
 if __name__ == "__main__":
