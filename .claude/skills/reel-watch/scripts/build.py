@@ -154,7 +154,7 @@ def cmd_plan_or_start(a, kind):
         die(f"Unknown model '{model}'. Use one of: {', '.join(BUILD_MODELS)} (or local:<model name>)")
     if is_local(model):
         import llm  # noqa: PLC0415
-        if not llm.resolve(model.partition(":")[2] or None):
+        if not llm.resolve(model.partition(":")[2] or None, tools=True):
             die(f"No model server answered at {(llm.config() or {}).get('url', 'REEL_LLM_URL')}. Start Ollama with "
                 "a model that can use tools (ollama pull qwen3:8b), or set REEL_LLM_URL / REEL_LLM_MODEL in .env.")
     d = build_dir(n)
