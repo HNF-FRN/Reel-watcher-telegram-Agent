@@ -74,8 +74,9 @@ class Breakdown(unittest.TestCase):
         self.assertEqual(self.section(md, "Step by step"), "- [0:01] Runs `npx skills add`")
         self.assertIn("$ npx skills add vercel-labs/agent-skills", md, "verbatim text still comes from OCR")
         user = sent[0][1]["content"]
-        self.assertIn("ON SCREEN (OCR)", user[0]["text"])
-        self.assertIn("vercel-labs/agent-skills", user[0]["text"])
+        self.assertIn("[0:01] on screen: $ npx skills add vercel-labs/agent-skills\n[0:05] on screen: Open",
+                      user[0]["text"], "the model gets the screens in time order (the repeat at 0:03 is skipped)")
+        self.assertIn("[0:00] said: Install the skills", user[0]["text"])
         self.assertEqual(len(user), 4, "a vision model sees the frames too")
         self.assertEqual((info["llm"], info["images_seen"]), ("qwen2.5vl:7b", 3))
         self.assertIn("written by qwen2.5vl:7b at models.local:11434, which saw 3 frames", md)
@@ -87,6 +88,22 @@ class Breakdown(unittest.TestCase):
         with mock.patch.dict(os.environ, {"REEL_LLM_VISION": ""}):
             self.run_it(chat, cfg={**CFG, "model": "qwen3:8b"})
         self.assertIsInstance(sent[0][1]["content"], str)
+
+    def test_a_looping_model_is_not_trusted(self):
+        # what qwen2.5:1.5b wrote in CI: the same evidence line, nested deeper on every line
+        loop = "\n".join("- [0:05] " + "said: '" * i + "Repo: | github. com/HNF -FRN/x'" for i in range(2, 30))
+        md, info = self.run_it(lambda *a, **k: {"content": f"## Summary\nA demo of skills.\n\n## Step by step\n{loop}"})
+        self.assertEqual(self.section(md, "Summary"), "A demo of skills.")
+        self.assertIn("- [0:01] on screen:", self.section(md, "Step by step"), "the timeline replaces the loop")
+        self.assertNotIn("said: 'said:", md)
+        self.assertIn("Its steps were unusable", self.section(md, "Notes"))
+        self.assertEqual(info["llm"], "qwen2.5vl:7b")
+
+    def test_a_model_that_only_pastes_the_input_is_not_used(self):
+        md, info = self.run_it(lambda *a, **k: {"content": "SPOKEN: x\nSPOKEN: y\nSPOKEN: z"})
+        self.assertEqual(self.section(md, "Summary"), "3 skills you need. Comment SKILLS for the list")
+        self.assertIn("gave no usable answer", self.section(md, "Notes"))
+        self.assertIsNone(info["llm"])
 
     def test_a_failing_model_falls_back_to_the_timeline(self):
         def chat(*a, **k):
