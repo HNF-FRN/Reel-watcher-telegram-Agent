@@ -38,11 +38,14 @@ def serve(handler):
 
 def reply_json(handler, obj):
     data = json.dumps(obj).encode()
-    handler.send_response(200)
-    handler.send_header("Content-Type", "application/json")
-    handler.send_header("Content-Length", str(len(data)))
-    handler.end_headers()
-    handler.wfile.write(data)
+    try:
+        handler.send_response(200)
+        handler.send_header("Content-Type", "application/json")
+        handler.send_header("Content-Length", str(len(data)))
+        handler.end_headers()
+        handler.wfile.write(data)
+    except (BrokenPipeError, ConnectionResetError):  # the bot was stopped mid-poll
+        pass
 
 
 class FakeTelegram:
@@ -209,8 +212,10 @@ class EndToEnd(unittest.TestCase):
         access = json.loads((self.tmp / "tg" / "access.json").read_text(encoding="utf-8"))
         self.assertEqual((access["allowFrom"], access["dmPolicy"]), (["42"], "allowlist"))
         tg.wait_for(r"Paired")
-        k = tg.say("/jobs", sender=99)
-        tg.wait_for(r"Pairing code", after=k, chat=99)
+        k = tg.say("/jobs", sender=99)  # once paired, strangers get no answer at all
+        tg.say("/menu")
+        tg.wait_for(r"Commands", after=k)
+        self.assertEqual([p for _, p in tg.sent[k:] if str(p.get("chat_id")) == "99"], [])
 
         # 2. an idea typed on the phone
         k = tg.say("/new a tiny hello app")
