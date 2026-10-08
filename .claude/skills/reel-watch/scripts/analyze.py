@@ -167,12 +167,21 @@ def plain_summary(kind, meta, segs, changes):
     return f"A {kind} with no caption, speech or text on screen."
 
 
+def best_line(lines):
+    """The line of a screen worth quoting: a command or a link if there is one, else the longest."""
+    for line in lines:
+        fixed = extract.ocr_fixes(line, screen=True)
+        if extract.commands_in(fixed) or extract.URL_RE.search(fixed) or extract.DOMAIN_RE.search(fixed):
+            return line
+    return max(lines, key=len)
+
+
 def timeline(changes, segs):
     """Without a model: what appeared on screen and what was said, in time order."""
     events = []
     for c in changes:
         extra = f" (+{len(c['lines']) - 1} lines)" if len(c["lines"]) > 1 else ""
-        text = f"on screen: `{c['lines'][0]}`{extra}"
+        text = f"on screen: `{best_line(c['lines'])}`{extra}"
         if c["t"] is None:
             events.append((c["slide"] or 0, 0, f"- {c['where'].capitalize()}: {text}"))
         else:
