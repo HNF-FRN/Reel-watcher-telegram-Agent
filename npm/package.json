@@ -10,6 +10,10 @@
     "cli.mjs",
     "py/reel.py",
     "py/common.py",
+    "py/analyze.py",
+    "py/extract.py",
+    "py/llm.py",
+    "py/ocr.py",
     "README.md"
   ],
   "scripts": {
