@@ -32,13 +32,16 @@ Write Markdown with exactly these two sections and nothing else:
 One sentence: what this {what} is about, and what the viewer is meant to take away.
 
 ## Step by step
-At most 8 short bullets in order, each starting with its time like [0:05] (or "Slide 2:"). Describe what happens
-in your own words, and write tools, repos and commands exactly as above. Don't copy the lines above."""
+At most 8 short bullets in order, each starting with {start}. Describe what happens in your own words, and
+write tools, repos and commands exactly as above. Don't copy the lines above."""
+STEP_START = {"video": "its time, like [0:05]", "slides": 'its slide, like "Slide 2:"',
+              "images": 'its image, like "Image 2:"'}
 
 MAX_EVIDENCE = 9000  # characters: local models often run with a 4-8k token window
 GENERIC_TITLE = re.compile(r"^(?:video|post|reel|photo)s? by\b", re.I)
 LABEL = re.compile(r"(?:on screen|said)\s*:", re.I)
 PASTED = re.compile(r"\bSPOKEN\b|\bCaption:|Links, repos and commands found", re.I)
+STAMP = re.compile(r"^(?:[-*•]\s*|\d+[.)]\s*)?\**\[?(\d+):(\d{2})\b")
 
 
 def log(msg):
@@ -165,15 +168,17 @@ def plain_summary(kind, meta, segs, changes):
                  changes[0]["lines"][0] if changes else ""):
         if text and text.strip():
             return first_sentence(text)
-    return f"A {kind} with no caption, speech or text on screen."
+    what = {"images": "post", "slides": "carousel post"}.get(kind, kind)
+    return f"A {what} with no caption, speech or text on screen."
 
 
 def best_line(lines):
-    """The line of a screen worth quoting: a command or a link if there is one, else the longest."""
+    """The line of a screen worth quoting: a command or a link if there is one (without the stray spaces OCR puts
+    into links; the On-screen text section keeps the raw reading), else the longest."""
     for line in lines:
         fixed = extract.ocr_fixes(line, screen=True)
         if extract.commands_in(fixed) or extract.URL_RE.search(fixed) or extract.DOMAIN_RE.search(fixed):
-            return line
+            return fixed
     return max(lines, key=len)
 
 
@@ -221,15 +226,26 @@ def tidy_summary(text):
     return text if text and len(text) <= 400 and not echoes(text) else None
 
 
-def tidy_steps(text, limit=12):
-    """The model's step list without repeated or pasted lines, or None when that leaves too little: small models
-    sometimes loop on one line or paste the input back."""
+def fits(line, kind, duration):
+    """A step a video can have: it starts with a time inside the video. (Small models sometimes add "Slide 4:"
+    steps to a video that has no slides.)"""
+    if kind != "video":
+        return True
+    m = STAMP.match(line.strip())
+    return bool(m) and (duration is None or int(m.group(1)) * 60 + int(m.group(2)) <= duration + 1)
+
+
+def tidy_steps(text, kind="video", duration=None, limit=12):
+    """The model's step list without pasted, repeated or impossible lines, or None when it is mostly pasted or
+    repeated: small models sometimes loop on one line or paste the input back."""
     lines = [line.rstrip() for line in (text or "").splitlines() if line.strip()]
-    kept = []
+    kept, bad = [], 0
     for line in lines:
-        if not echoes(line) and line not in kept:
+        if echoes(line) or line in kept:
+            bad += 1
+        elif fits(line, kind, duration):
             kept.append(line)
-    return "\n".join(kept[:limit]) if kept and len(kept) * 2 >= len(lines) else None
+    return "\n".join(kept[:limit]) if kept and bad * 2 <= len(lines) else None
 
 
 def evidence_block(meta, changes, segs, found):
@@ -263,12 +279,13 @@ def with_model(cfg, kind, frames, meta, changes, segs, found, duration, max_imag
     what = {"images": "post", "slides": "carousel post"}.get(kind, "video")
     prompt = PROMPT.format(what=what, length=f" ({round(duration)} s)" if duration else "",
                            images=f"\n{len(images)} frames are attached as images, in order." if images else "",
-                           evidence=evidence_block(meta, changes, segs, found))
+                           evidence=evidence_block(meta, changes, segs, found),
+                           start=STEP_START.get(kind, STEP_START["video"]))
     content = [{"type": "text", "text": prompt}] + [llm.image_part(f["path"]) for f in images] if images else prompt
     msg = llm.chat([{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}], cfg,
                    temperature=0.2, max_tokens=700, timeout=900, frequency_penalty=0.4)
     summary, steps = split_sections(llm.text(msg))
-    return tidy_summary(summary), tidy_steps(steps), len(images)
+    return tidy_summary(summary), tidy_steps(steps, kind, duration), len(images)
 
 
 def notes(found, ocr_name, transcript, slides, whisper, cfg, used, err, images, use_llm=True):
@@ -288,7 +305,8 @@ def notes(found, ocr_name, transcript, slides, whisper, cfg, used, err, images, 
         out.append(f"{wrote.capitalize()} written by {llm.describe(cfg)}" + (f", which saw {images} frames" if images
                    else "") + ". Everything quoted comes from OCR and the transcript, not from the model."
                    + ("" if len(used) == 2 else " Its " + ("steps were" if "summary" in used else "summary was") +
-                      " unusable (it repeated itself or copied the input), so that part comes from the evidence."))
+                      " unusable (repeated, copied from the input or not matching the video), so that part comes from"
+                      " the evidence."))
     elif err:
         out.append(f"The local model failed ({err}), so the summary is the caption and the steps are a timeline.")
     elif not use_llm or llm.config() is None:
