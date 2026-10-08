@@ -25,7 +25,9 @@ You need a Claude Pro or Max plan and Telegram on your phone.
 npx reel-agent watch https://www.instagram.com/reel/...
 ```
 
-Gemini watches the whole video with sound and prints what it shows: the tools, links, repos and commands. Set `GEMINI_API_KEY` (free) for the full breakdown. Without it you get frames and a transcript. Files go to `reels/` in the current folder. It works on Windows, macOS and Linux and needs Python 3.10+ (it offers to install `yt-dlp` and `imageio-ffmpeg`).
+It breaks the video down on your computer and prints what it shows: the tools, links, repos and commands, quoted from the screen (OCR) and the voice-over (Whisper), with a summary by a local model if Ollama runs. Optional: `pip install faster-whisper rapidocr onnxruntime` for the transcript and OCR, or set `GEMINI_API_KEY` to have Gemini watch it instead. Files go to `reels/` in the current folder. It works on Windows, macOS and Linux and needs Python 3.10+ (it offers to install `yt-dlp` and `imageio-ffmpeg`).
+
+The whole Telegram bot also runs on any OS without Claude Code: see [the open-models quick start](https://github.com/HNF-FRN/Reel-watcher-telegram-Agent#open-models-any-os).
 
 ## Manage the bot
 

@@ -1,18 +1,18 @@
 ---
 name: reel-watch
-description: Watch a short video (Instagram reel, TikTok, YouTube Short, X video, or a local .mp4 / Telegram video attachment) by downloading it for free, then having Gemini watch it with audio (main engine) or, as a backup, sampling frames and transcribing the audio locally. Use whenever a message contains a video link or a video file and the user wants to know what's in it.
+description: Watch a short video (Instagram reel, TikTok, YouTube Short, X video, or a local .mp4 / Telegram video attachment) by downloading it for free, then breaking it down on this computer (frames, Whisper transcript, OCR of the screen, the exact commands, repos and links shown, and a summary by a local model if one runs) or, with a GEMINI_API_KEY, having Gemini watch it with audio. Use whenever a message contains a video link or a video file and the user wants to know what's in it.
 ---
 
 # reel-watch
 
 Claude can't take video as input. This skill downloads the video and then:
 
-- **Gemini (main):** sends the whole video, with audio, to Gemini, which returns a structured breakdown and a transcript. It also extracts a few frames so you can check exact on-screen text yourself.
-- **Local (backup):** if there's no `GEMINI_API_KEY`, or Gemini errors, is over quota or refuses, it falls back automatically to ffmpeg frames plus a faster-whisper transcript.
+- **Open engine (default, on this computer):** ffmpeg frames, a faster-whisper transcript, OCR of every frame (RapidOCR or Tesseract), the commands, repos, packages and links found in all of it (with where each was seen), and a summary written by a local model if one answers (Ollama or any OpenAI-compatible server). Everything quoted comes from OCR and the transcript, never from a model.
+- **Gemini (optional):** with a `GEMINI_API_KEY`, sends the whole video, with audio, to Gemini, which returns a structured breakdown and a transcript. The check frames are still read by OCR so exact on-screen text can be confirmed. If Gemini errors, is over quota or refuses, the open engine takes over.
 
 In the reel-agent project, the main session doesn't run this itself: each reel goes to a background `reel-worker` agent (see `.claude/agents/reel-worker.md`).
 
-Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install "yt-dlp[default,curl-cffi]" imageio-ffmpeg` (add `faster-whisper` for local transcripts). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
+Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`, then `/plugin install reel-watch@reel-agent`), it works in any folder on Windows, macOS or Linux. It needs Python 3.10+ and `pip install "yt-dlp[default,curl-cffi]" imageio-ffmpeg` (add `faster-whisper rapidocr onnxruntime` for transcripts and OCR). If `yt-dlp` is missing, tell the user that command and stop. Output goes to `reels/` in the current folder.
 
 ## Steps
 
@@ -32,8 +32,8 @@ Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-
    Works for video links, local videos, Instagram photo posts and carousels (every slide, photos and videos, no
    login; needs yt-dlp 2026.08.19 or newer), and one or more local images (screenshots, carousel slides). YouTube
    links are sent to Gemini by URL, no download needed.
-   Options: `--engine auto|gemini|local` (default auto), `--max-frames N` for the local engine (default 16; use 24-30 for dense tutorials), `--check-frames N` for Gemini (default 8), `--no-transcript`.
-   Config (env var, or a `.env` file in the project root or current folder): `GEMINI_API_KEY`, `REEL_GEMINI_MODEL` (default: `gemini-3.8-flash`, then 3.7 and 3.5 Flash), `REEL_ENGINE`, `REEL_IG_COOKIES`.
+   Options: `--engine auto|gemini|local` (default auto), `--max-frames N` for the local engine (default 16; use 24-30 for dense tutorials), `--check-frames N` for Gemini (default 8), `--no-transcript`, `--llm off` (no local model).
+   Config (env var, or a `.env` file in the project root or current folder): `GEMINI_API_KEY`, `REEL_GEMINI_MODEL` (default: `gemini-3.8-flash`, then 3.7 and 3.5 Flash), `REEL_ENGINE`, `REEL_IG_COOKIES`, `REEL_LLM_URL` / `REEL_LLM_MODEL` (the local model), `REEL_OCR`.
    Gemini's free tier allows about 5 requests a minute and 20 a day per model. A model that runs out for the day is remembered in `reels/.gemini_quota.json` and skipped until midnight Pacific; when all are out, the local engine is used.
 
 3. **Exit code 3 = download failed.** Every free method was blocked. Tell the user:
@@ -44,7 +44,7 @@ Installed on its own as a plugin (`/plugin marketplace add HNF-FRN/Reel-watcher-
    - `kind: images`: Read every image in the `IMAGES` list.
    - `kind: slides` (a carousel with video slides): Read every image in the `SLIDES` list and each video slide's frames.
    - A `NOTE` saying only some slides could be fetched: tell the user which ones you saw.
-   - `engine: local`: Read every frame path in the `FRAMES` list. Use each frame's `said:` text to connect what's on screen with what's being said.
+   - `engine: local (…)`: the `LOCAL ANALYSIS` block (OCR of every frame, the transcript, and the commands, repos and links found, with where) is your main source. Each frame in the `FRAMES` list shows its `ocr:` text and `said:` text: Read the frames whose text you quote, and any without text, to see what is shown. If the analysis and a frame disagree, trust the frame.
 
 5. **Build the breakdown** from the analysis, frames, transcript and caption:
    - What it is (one line)

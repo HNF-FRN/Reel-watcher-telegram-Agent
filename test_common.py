@@ -79,5 +79,35 @@ class Config(unittest.TestCase):
             self.assertEqual(common.load_config()["cloud_url"], "https://x.workers.dev")
 
 
+class Env(unittest.TestCase):
+    def test_dotenv_in_any_encoding_never_overrides(self):
+        folder = Path(tempfile.mkdtemp())
+        for name, data in (("utf8", "REEL_T1=a\n# REEL_T2=no\nREEL_T3 = \"b\"\n".encode()),
+                           ("ps5", "REEL_T4=c\r\n".encode("utf-16")),  # Windows PowerShell 5: echo ... >> .env
+                           ("bom", "﻿REEL_T5=d\n".encode())):
+            (folder / name).write_bytes(data)
+        with mock.patch.dict(os.environ, {"REEL_T1": "kept"}):
+            for name in ("utf8", "ps5", "bom"):
+                common.load_env(folder / name)
+            self.assertEqual([os.environ.get(f"REEL_T{i}") for i in range(1, 6)], ["kept", None, "b", "c", "d"])
+        common.load_env(folder / "missing")  # no .env is fine
+
+    def test_models(self):
+        self.assertTrue(common.is_local("local") and common.is_local("local:qwen3:8b"))
+        self.assertFalse(common.is_local("sonnet") or common.is_local("localhost"))
+        self.assertIn("local", common.BUILD_MODELS)
+
+
+class Processes(unittest.TestCase):
+    def test_a_background_child_is_stopped_with_its_children(self):
+        code = "import subprocess, sys, time; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); " \
+               "print('started', flush=True); time.sleep(60)"
+        p = subprocess.Popen([sys.executable, "-c", code], stdout=subprocess.PIPE, text=True, **common.background())
+        self.assertEqual(p.stdout.readline().strip(), "started")
+        common.kill_tree(p.pid)
+        self.assertIsNotNone(p.wait(30), "the parent is gone")
+        common.kill_tree(None)  # nothing to stop is fine
+
+
 if __name__ == "__main__":
     unittest.main()

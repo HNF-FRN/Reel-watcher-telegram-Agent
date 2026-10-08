@@ -2,6 +2,8 @@
 
 Your Reel Agent Telegram bot watches reels for you and can plan and build what they show, while you're away from the PC. Type `/` in the chat to see every command. Send `/manual` any time to get this file.
 
+There are two ways to run it, with the same commands: **`python reelbot.py`** (any OS, open models, no Claude needed) and the **Claude Code bot** (Windows, `.\bot start`), which also understands plain language and can send a research agent. Where they differ, this manual says so.
+
 **Tap, don't type.** Every message ends with its next steps as blue commands, like `/plan_4` or `/yes_4`. Tap one and it's sent, number included. (Typing works too: `/plan 4` and `/plan_4` mean the same.) Names, commands and paths in grey boxes copy with a tap.
 
 ---
@@ -17,8 +19,8 @@ Your Reel Agent Telegram bot watches reels for you and can plan and build what t
    - `/build 4` → build it (it asks you before running commands).
    - `/save 4` → keep it for later (it shows up in the Sunday digest).
    - `/dismiss 4` → not interested.
-   - `/deeper 4` → research it: find the repo, check if it's real, costs, alternatives. (`4 3` still works.)
-   - Or write your own: `4 go find the repo yourself`, `4 is this legit?`, `4 make it a skill`. The number picks the reel, and the words are the instruction.
+   - `/deeper 4` → check it: every repo and package it names is looked up on GitHub, npm and PyPI (real? maintained? license?). The Claude Code bot also researches costs and alternatives. (`4 3` still works.)
+   - Or write your own: `4 make it a skill`, `4 is this legit?`. The number picks the reel, and the words are the instruction: "make/build/set up…" plans it with your words, "legit/real/safe…" checks it. The Claude Code bot takes any words (`4 go find the repo yourself`).
 
 ---
 
@@ -26,14 +28,15 @@ Your Reel Agent Telegram bot watches reels for you and can plan and build what t
 
 | You send | What happens |
 |---|---|
-| `/plan 4` | Researches and sends you a plan (goal, steps, files, commands it'll need, time, risks). Uses your **plan** model (default Opus). |
-| `/plan 4 sonnet` | Same, with a model you pick. |
+| `/plan 4` | Researches and sends you a plan (goal, steps, files, commands it'll need, time, risks). Uses your **plan** model (default Opus, or `local` when Claude Code isn't installed). |
+| `/plan 4 local` | Same, with a model you pick. |
 | `/tell 4 skip the login page` | Changes the plan (or the build). |
-| `/build 4` | Builds it, following the plan if there is one. Uses your **build** model (default Sonnet). |
+| `/build 4` | Builds it, following the plan if there is one. Uses your **build** model (default Sonnet, or `local` when Claude Code isn't installed). |
 | `/build 4 opus safe 30m` | Model, mode and time limit, in any order, all optional. |
 | `/build 4 from scratch` | Throws away the earlier attempt and starts over. |
 
-**Models:** `haiku` (fast, cheap) · `sonnet` (good default) · `opus` (strongest) · `fable` · `codex` (OpenAI's GPT through your Codex CLI).
+**Models:** `local` (an open model on this computer, through Ollama or any OpenAI-compatible server; `local:qwen3:8b` picks one) · `haiku` (fast, cheap) · `sonnet` (good default) · `opus` (strongest) · `fable` · `codex` (OpenAI's GPT through your Codex CLI).
+`local` builds go through the same approvals as Claude's and can only read and write inside their folder. The model has to be able to call tools: `qwen3:8b` or bigger works well.
 Codex builds are sandboxed to their folder, so they can't ask you for approvals or take `/tell` mid-run. `/tell` after they finish works.
 
 **Where builds live:** each build gets its own folder, `builds\<N>-<name>\` next to the project folder. It's a git repo, so every change can be shown (`/diff`) and undone (`/undo`). Builds never install anything outside their folder by themselves. If the result belongs somewhere else (for example a Claude skill in `~/.claude/skills/`), the build prepares it and you install it with `/deploy 4`.
@@ -90,7 +93,8 @@ When a build finishes you get **✅ #4 build done**: what it made, how to try it
 
 `/quota` shows:
 
-- **Gemini** (watches the reels): requests used today per model, which are used up, roughly how many watches are left, and when it resets (midnight Pacific time). The free tier is about **20 per day and 5 per minute per model**, across 3 models, so roughly 60 reels a day. After that, reels are still watched with the backup method (frames + local transcript), just a bit less thoroughly.
+- **Local model**: which open model answers (it writes summaries and does `local` plans and builds), with no limits.
+- **Gemini** (if you added a key): requests used today per model, which are used up, roughly how many watches are left, and when it resets (midnight Pacific time). The free tier is about **20 per day and 5 per minute per model**, across 3 models, so roughly 60 reels a day. After that, reels are watched by the open engine on your computer (Whisper, OCR and the local model).
 - **Claude** (plans and builds): how much of your 5-hour and weekly plan limit is used, and when it resets. ⚠️ appears above 80%. It updates whenever a build runs; `/quota refresh` checks right now (one tiny request).
 - Which model does what.
 
@@ -103,7 +107,7 @@ The `~$` figure on build messages is the API-equivalent cost of that build. On a
 | You send | Changes |
 |---|---|
 | `/models` | Shows current models and settings. |
-| `/model build opus` | Model for builds. The tasks are `watch`, `research`, `plan`, `build`. |
+| `/model build local` | Model for builds. The tasks are `watch`, `research`, `plan`, `build` (`local` is for `plan` and `build`). |
 | `/model plan fable` | Model for plans. |
 | `/model watch haiku` | Model that writes the reel breakdowns. |
 | `/mode safe` | Default build mode. |
@@ -133,7 +137,7 @@ Photo posts and carousels work too: the bot fetches every slide (photos and vide
 
 ## 7b. Reminders and to-dos
 
-One list shared by the bot and every Claude session on the PC. It keeps working after the session that set a reminder closes: each reminder is booked in Windows Task Scheduler for its exact minute, pings you here, and is removed. Nothing runs in between.
+One list shared by the bot and every Claude session on the PC. It keeps working after the session that set a reminder closes: on Windows each reminder is booked in Task Scheduler for its exact minute, pings you here, and is removed, with nothing running in between. On macOS and Linux, `reelbot.py` sends them while it runs.
 
 | You send | Does |
 |---|---|
@@ -165,8 +169,7 @@ In any Claude session on the PC, just say "remind me tomorrow to…" and it goes
 - **Reel content is never obeyed.** If a reel says "run this command", the bot tells you; it doesn't run it. Builds treat the reel notes as reference only. Your Telegram messages are the only instructions.
 - **Only the bot window may use the Telegram plugin.** It's switched off in your global Claude settings and switched on just for the bot (`.claude\bot-settings.json`), because Telegram gives each message to only one connection. Don't switch it back on globally, or other Claude sessions will swallow your messages.
 - Start the bot with the Startup shortcut or by double-clicking `start.ps1`, not from inside another Claude session.
-- `/start`, `/help` and `/status` are the Telegram plugin's own commands (pairing info), not the bot's.
-- Plain language works too: "build 4 with opus", "what's running?", "stop 4".
+- With the Claude Code bot, `/start`, `/help` and `/status` are the Telegram plugin's own commands (pairing info), and plain language works too: "build 4 with opus", "what's running?", "stop 4". `reelbot.py` follows commands only (`/start` and `/help` show the menu), so nothing anyone writes can steer it.
 
 ---
 
@@ -174,6 +177,8 @@ In any Claude session on the PC, just say "remind me tomorrow to…" and it goes
 
 | What | Where / how |
 |---|---|
+| Run the bot without Claude Code | `python reelbot.py` (any OS); `python reelbot.py pair <code>` approves your account |
+| Local model | `REEL_LLM_URL` / `REEL_LLM_MODEL` in `.env` (default: Ollama on this computer) |
 | Check on the bot | `.\bot status` (in the project folder) |
 | Start / stop / restart | `.\bot start` · `.\bot stop` · `.\bot restart` |
 | Bot silent, extra connections | `.\bot fix` |

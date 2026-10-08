@@ -1,6 +1,7 @@
 """runner.py - supervises ONE build (or plan) run in its own folder, in the background.
 
-Started by build.py; never run by hand. It drives a headless Claude session (or Codex) and:
+Started by build.py; never run by hand. It drives a headless Claude session, Codex, or an open model through
+agent.py ("local"), and:
   - asks the user on Telegram before anything the build's mode doesn't allow (/yes /no /always)
   - forwards /tell messages into the running session
   - enforces the active-time limit, honours /stop, keeps status for /peek /tasks /pending
@@ -16,18 +17,24 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import GIT_ID, claude_usage_record, clean_env, find_exe, load_config, now, read_json, tg_send, utf8_stdio, write_json  # noqa: E402
+from common import (GIT_ID, background, claude_usage_record, clean_env, find_exe, is_local, kill_tree,  # noqa: E402
+                    load_config, load_env, now, read_json, tg_send, utf8_stdio, write_json)
 
-NO_WINDOW = 0x08000000
 READ_ONLY_TOOLS = {"Read", "Glob", "Grep", "LS", "WebSearch", "WebFetch", "TodoWrite", "TodoRead", "Task", "Agent",
                    "ToolSearch", "NotebookRead", "TaskOutput", "BashOutput", "ListMcpResourcesTool", "Skill"}
 EDIT_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
+# The build's own bookkeeping. A file written into .git (a hook, core.fsmonitor) runs code at the runner's next
+# git command, and .reel holds answer.json, the user's approvals: editing either would get around /yes.
+PROTECTED = (".git", ".reel")
+PROTECTED_MSG = ("Not allowed: .git and .reel are the build's own bookkeeping (git internals and the approval "
+                 "files). Change the project's files, and use git commands, which the user approves.")
 
-BUILD_RULES = """You are running unattended on the user's Windows PC. The user is away and controls you from
+BUILD_RULES = """You are running unattended on the user's computer. The user is away and controls you from
 their phone through a Telegram bot; your final message is sent to that phone.
 
 Rules:
@@ -71,6 +78,7 @@ class Runner:
         self.active_start = time.time()
         self.stopped_reason = None
         self.last_result = None
+        self.decisions = {}         # request_id -> (allow, message), for the open-model agent
         (self.meta / "inbox").mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------ bookkeeping
@@ -121,7 +129,7 @@ class Runner:
     def start(self, cmd):
         self.proc = subprocess.Popen(cmd, cwd=self.dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
-                                     bufsize=1, creationflags=NO_WINDOW, env=clean_env())
+                                     bufsize=1, env=clean_env(), **background())
         self.save(claude_pid=self.proc.pid)
         threading.Thread(target=self._pump, args=(self.proc.stdout, "out"), daemon=True).start()
         threading.Thread(target=self._pump, args=(self.proc.stderr, "err"), daemon=True).start()
@@ -140,6 +148,9 @@ class Runner:
             pass
 
     def respond(self, request_id, allow, inp=None, message=""):
+        if self.proc is None:  # the open-model agent runs in this process: hand it the answer directly
+            self.decisions[request_id] = (allow, message)
+            return
         resp = {"behavior": "allow", "updatedInput": inp or {}} if allow else {"behavior": "deny", "message": message}
         try:
             self.proc.stdin.write(json.dumps({"type": "control_response", "response": {
@@ -150,9 +161,17 @@ class Runner:
 
     def kill(self):
         if self.proc and self.proc.poll() is None:
-            subprocess.run(["taskkill", "/PID", str(self.proc.pid), "/T", "/F"], capture_output=True)
+            kill_tree(self.proc.pid)
 
     # ------------------------------------------------------------ permissions
+    def protected(self, path):
+        """True for a path inside the build's .git or .reel folder (also when reached through a symlink)."""
+        try:
+            parts = (self.dir / path).resolve().relative_to(self.dir).parts
+        except (ValueError, OSError):
+            return False
+        return bool(parts) and parts[0].lower().rstrip(". ") in PROTECTED  # Windows reads ".git." as ".git"
+
     def decide(self, req):
         """Return True (allow now), False (deny now) or None (ask the user)."""
         tool, inp = req.get("tool_name", ""), req.get("input") or {}
@@ -162,6 +181,8 @@ class Runner:
             return True
         if tool in EDIT_TOOLS:
             path = inp.get("file_path") or inp.get("notebook_path") or ""
+            if path and self.protected(path):
+                return False
             try:
                 inside = Path(path).resolve().is_relative_to(self.dir)
             except Exception:
@@ -286,7 +307,7 @@ class Runner:
             if verdict is None:
                 self.ask(ev)
             else:
-                self.respond(ev["request_id"], verdict, req.get("input"))
+                self.respond(ev["request_id"], verdict, req.get("input"), "" if verdict else PROTECTED_MSG)
         elif t == "result":
             self.results += 1
             self.last_result = ev
@@ -294,16 +315,50 @@ class Runner:
             self.save(cost_usd=round(cost, 4), turns=(self.state.get("turns") or 0) + (ev.get("num_turns") or 0),
                       result=(ev.get("result") or "")[:4000])
 
-    def check_inbox(self):
+    def take_inbox(self):
+        """The /tell messages waiting for this run, oldest first."""
+        out = []
         for f in sorted((self.meta / "inbox").glob("*.txt")):
             text = f.read_text(encoding="utf-8")
             f.unlink()
             self.log(f"📨 you said: {text[:200]}")
+            out.append(text)
+        return out
+
+    def check_inbox(self):
+        for text in self.take_inbox():
             self.send_user(f"Message from the user (via Telegram): {text}")
 
     def active_minutes(self):
         waiting = self.waited + (time.time() - self.waiting_since if self.waiting_since else 0)
         return (time.time() - self.active_start - waiting) / 60
+
+    def stop_reason(self):
+        """Why the run has to end now (/stop or the time limit), or None. The open-model agent checks it between
+        steps and while it waits for an answer."""
+        limit = self.state.get("limit_min") or self.cfg.get("limit_min") or 60
+        if not self.stopped_reason and (self.meta / "stop").exists():
+            (self.meta / "stop").unlink(missing_ok=True)
+            self.stopped_reason = "stopped by you"
+        elif not self.stopped_reason and self.active_minutes() > limit:
+            self.stopped_reason = f"time limit ({limit} min)"
+        return self.stopped_reason
+
+    def gate(self, tool, inp):
+        """(allowed, message) for the open-model agent, decided exactly as for Claude: the build's mode and
+        /always rules, otherwise a 🔐 card on the phone and a wait for /yes or /no."""
+        req = {"tool_name": tool, "input": inp}
+        verdict = self.decide(req)
+        if verdict is not None:
+            return verdict, "" if verdict else PROTECTED_MSG
+        rid = uuid.uuid4().hex
+        self.ask({"request": req, "request_id": rid})
+        while rid not in self.decisions:
+            self.check_answer()
+            if self.stop_reason():
+                return False, "The build was stopped."
+            time.sleep(0.5)
+        return self.decisions.pop(rid)
 
     # ------------------------------------------------------------ main loops
     def drain(self, on_event, tick=lambda: None):
@@ -377,6 +432,40 @@ class Runner:
         self.last_result = {"result": result, "is_error": self.proc.returncode not in (0, None) and not result}
         self.save(result=result[:4000])
 
+    def run_local(self):
+        """Plan or build with an open model (agent.py), through the same approvals as Claude. The conversation is
+        kept in .reel/local_history.json, so /tell and /resume continue it."""
+        import agent  # noqa: PLC0415 - only local runs need it
+        import llm  # noqa: PLC0415
+        cfg = llm.resolve(self.state["model"].partition(":")[2] or None, tools=True)
+        if not cfg:
+            url = (llm.config() or {}).get("url", "REEL_LLM_URL")
+            raise RuntimeError(f"no model server answered at {url}. Start Ollama with a model that can use tools "
+                               "(e.g. ollama pull qwen3:8b), or set REEL_LLM_URL and REEL_LLM_MODEL in .env")
+        plan = self.state.get("kind") == "plan"
+        history = self.meta / "local_history.json"
+        messages = (read_json(history, []) or []) if self.resume else []
+        if not messages:
+            messages = [{"role": "system", "content": agent.system_prompt(plan, PLAN_RULES if plan else BUILD_RULES)}]
+        messages.append({"role": "user", "content": self.message})
+        if not (self.resume and self.state.get("session_id")):
+            self.save(session_id=f"local-{uuid.uuid4().hex[:8]}")  # lets build.py resume this conversation
+        self.save(local_model=cfg["model"])
+        self.log(f"🧠 {llm.describe(cfg)}")
+        bot = agent.Agent(self.dir, lambda msgs, tools: llm.chat(msgs, cfg, tools=tools), self.gate, self.log,
+                          plan=plan, inbox=self.take_inbox, stopped=self.stop_reason)
+        try:
+            result = bot.run(messages)
+        finally:
+            write_json(history, messages)
+        if bot.unfinished and not self.stopped_reason:
+            self.stopped_reason = bot.unfinished
+        if plan and bot.plan:
+            (self.dir / "PLAN.md").write_text(bot.plan, encoding="utf-8")
+            self.state["plan_text"] = bot.plan
+        self.last_result = {"result": result or "", "is_error": not result and not self.stopped_reason}
+        self.save(result=(result or "")[:4000])
+
     def commit(self):
         git = ["git", "-C", str(self.dir), *GIT_ID]
         subprocess.run(git + ["add", "-A"], capture_output=True)
@@ -396,11 +485,14 @@ class Runner:
         try:
             if self.state["model"] == "codex":
                 self.run_codex()
+            elif is_local(self.state["model"]):
+                self.run_local()
             else:
                 self.run_claude()
         except Exception as e:
             self.stopped_reason = self.stopped_reason or f"crashed: {e}"
             self.kill()
+        self.pending = []  # nothing can be approved once the run is over
         self.commit()
         mins = round((time.time() - t0) / 60, 1)
         res = (self.last_result or {}).get("result") or self.state.get("result") or ""
@@ -408,39 +500,46 @@ class Runner:
         n = self.n
         cost = f" · ~${self.state.get('cost_usd')}" if self.state.get("cost_usd") else ""
         kind = "plan" if is_plan else "build"
-        meta = f"{self.state['model']} · {mins} min{cost}"
+        model = self.state["model"]
+        if is_local(model) and self.state.get("local_model"):
+            model = f"local {self.state['local_model']}"
+        meta = f"{model} · {mins} min{cost}"
         if self.stopped_reason:
             status = "stopped"
-            self.notify(f"⏹ **#{n} {kind} stopped** · {meta}\n{self.stopped_reason}\n\n"
-                        f"/resume {n}  carry on\n/peek {n}  where it got to\n/diff {n}  what changed so far")
+            text = (f"⏹ **#{n} {kind} stopped** · {meta}\n{self.stopped_reason}\n\n"
+                    f"/resume {n}  carry on\n/peek {n}  where it got to\n/diff {n}  what changed so far")
         elif (self.last_result or {}).get("is_error") or not self.last_result:
             status = "failed"
             detail = f"\n```\n{res[:800]}\n```" if res.strip() else ""
-            self.notify(f"❌ **#{n} {kind} failed** · {meta}{detail}\n\n/log {n}  full log\n/resume {n}  try again")
+            text = f"❌ **#{n} {kind} failed** · {meta}{detail}\n\n/log {n}  full log\n/resume {n}  try again"
         elif is_plan:
             status = "plan-ready"
             plan = self.state.get("plan_text") or res
             if not (self.dir / "PLAN.md").exists():
                 (self.dir / "PLAN.md").write_text(plan, encoding="utf-8")
             cut = f"\n\n*Cut short here. /log {n} sends the whole plan.*" if len(plan) > 3300 else ""
-            self.notify(f"📋 **#{n} plan ready** · {meta}\n\n{plan[:3300]}{cut}\n\n**Next**\n"
-                        f"/build {n}  build it\n/build {n} opus  build it with Opus\n/plan {n} opus  plan again with Opus\n"
-                        f"/tell {n} <changes>  change the plan")
+            other = "" if is_local(self.state["model"]) else \
+                f"/build {n} opus  build it with Opus\n/plan {n} opus  plan again with Opus\n"
+            text = (f"📋 **#{n} plan ready** · {meta}\n\n{plan[:3300]}{cut}\n\n**Next**\n"
+                    f"/build {n}  build it\n{other}/tell {n} <changes>  change the plan")
         elif re.search(r"^QUESTION:", res, re.M):
             status = "question"
             q = re.search(r"^QUESTION:(.*)$", res, re.M).group(1).strip()
-            self.notify(f"❓ **#{n} has a question**\n{q}\n\nAnswer with /tell {n} <your answer>")
+            text = f"❓ **#{n} has a question**\n{q}\n\nAnswer with /tell {n} <your answer>"
         else:
             status = "done"
             deploy = f"\n/deploy {n}  install it" if (self.dir / "deploy.json").exists() else ""
-            self.notify(f"✅ **#{n} build done** · {meta}\n\n{res[:2500]}\n\n**Next**\n"
-                        f"/diff {n}  see what changed{deploy}\n/undo {n}  throw it away\n/tell {n} <changes>  ask for changes")
+            text = (f"✅ **#{n} build done** · {meta}\n\n{res[:2500]}\n\n**Next**\n"
+                    f"/diff {n}  see what changed{deploy}\n/undo {n}  throw it away\n/tell {n} <changes>  ask for changes")
         self.log(f"🏁 {status} after {mins} min")
+        # the state is final before the phone hears about it, so a /build tapped right away finds the run over
         self.save(status=status, ended=now(), runner_pid=None, claude_pid=None)
+        self.notify(text)
 
 
 def main():
     utf8_stdio()
+    load_env()  # REEL_LLM_* for local runs
     bdir, msg_file = sys.argv[1], sys.argv[2]
     resume = "--resume" in sys.argv
     message = Path(msg_file).read_text(encoding="utf-8")

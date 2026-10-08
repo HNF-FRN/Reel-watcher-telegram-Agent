@@ -2,7 +2,7 @@
 // reel-agent: one-command installer and controller for Reel Agent (https://github.com/HNF-FRN/Reel-watcher-telegram-Agent).
 //
 //   npx reel-agent                 install or update everything on Windows, start the bot, pair your phone
-//   npx reel-agent watch <link>    any OS: have Gemini watch a video and print what it shows
+//   npx reel-agent watch <link>    any OS: watch a video on this computer and print what it shows
 //   npx reel-agent start|stop|restart|status|fix|update|tasks|quota
 //   npx reel-agent pair [code]     approve your Telegram account
 //   npx reel-agent doctor          check the whole setup, change nothing
@@ -204,7 +204,7 @@ async function install() {
   if (!IS_WIN) {
     say("The full Telegram bot runs on Windows for now (macOS and Linux: github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13).");
     say("\nOn this computer you can already:");
-    say(`  ${bold("npx reel-agent watch <link>")}   have Gemini watch any reel, TikTok or YouTube video`);
+    say(`  ${bold("npx reel-agent watch <link>")}   break down any reel, TikTok or YouTube video, on this computer`);
     say(`  ${bold("In Claude Code:")}  /plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent`);
     say(`                   /plugin install reel-watch@reel-agent`);
     return 0;
@@ -328,8 +328,9 @@ async function watch(sources) {
     }
   }
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY && !fs.existsSync(path.resolve(".env"))) {
-    say(dim("  Tip: set GEMINI_API_KEY (free at aistudio.google.com/apikey) so Gemini watches it with sound."));
-    say(dim("  Without it you get frames and a transcript (pip install faster-whisper) instead of a breakdown.\n"));
+    say(dim("  Watching on this computer: Whisper hears it, OCR reads the screen, links and commands are pulled out."));
+    say(dim("  Optional: pip install faster-whisper rapidocr onnxruntime, and run Ollama for a written summary."));
+    say(dim("  (Or set GEMINI_API_KEY to have Gemini watch it instead.)\n"));
   }
   const rest = argv.slice(argv.indexOf("watch") + 1);
   return run(py.exe, [...py.pre, path.join(HERE, "py", "reel.py"), ...rest], {
@@ -345,7 +346,7 @@ ${bold("Setup (Windows)")}
   npx reel-agent --dir <folder>  install somewhere other than ~/reel-agent
 
 ${bold("Any OS")}
-  npx reel-agent watch <link>    Gemini watches a reel, TikTok, YouTube or X video and says what it shows
+  npx reel-agent watch <link>    breaks down a reel, TikTok, YouTube or X video: what it shows, links, commands
 
 ${bold("Manage the bot")}
   npx reel-agent status | start | stop | restart | fix | update | tasks | quota
