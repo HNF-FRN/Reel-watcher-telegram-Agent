@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reel Agent · turn reels into working setups from your phone</title>
-<meta name="description" content="Open-source Telegram bot for Windows. Send it an Instagram reel, TikTok or YouTube link: it tells you exactly what the video shows, then plans and builds it on your PC with Claude Code, asking your phone before every command.">
+<meta name="description" content="Open-source Telegram bot for Windows, macOS and Linux. Send it an Instagram reel, TikTok or YouTube link: it tells you exactly what the video shows, then plans and builds it on your computer with an open model or Claude Code, asking your phone before every command.">
 <link rel="canonical" href="https://hnf-frn.github.io/Reel-watcher-telegram-Agent/">
 <meta name="theme-color" content="#141414">
 <meta property="og:type" content="website">
@@ -29,8 +29,8 @@
   "@type": "SoftwareApplication",
   "name": "Reel Agent",
   "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Windows 10, Windows 11",
-  "description": "Open-source Telegram bot that watches Instagram reels, TikToks and YouTube videos you send it, explains what they show, and plans and builds them on your PC with Claude Code, asking before every command.",
+  "operatingSystem": "Windows, macOS, Linux",
+  "description": "Open-source Telegram bot that watches Instagram reels, TikToks and YouTube videos you send it, explains what they show, and plans and builds them on your computer with open models (Ollama) or Claude Code, asking before every command.",
   "url": "https://hnf-frn.github.io/Reel-watcher-telegram-Agent/",
   "downloadUrl": "https://github.com/HNF-FRN/Reel-watcher-telegram-Agent",
   "license": "https://opensource.org/licenses/MIT",
@@ -133,14 +133,14 @@
     </nav>
     <div class="hero">
       <div>
-        <div class="eyebrow">Telegram · Claude Code · Gemini · Cloudflare</div>
+        <div class="eyebrow">Telegram · Whisper · OCR · open models</div>
         <h1>Send a reel.<br>Get it <span>built.</span></h1>
         <p class="lede">Saw an AI tool in a reel and thought "I should set that up"? Forward it to your bot. It tells you what the video really shows, then builds it on your PC while you approve every step from your phone.</p>
         <div class="ctas">
           <a class="btn primary" href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent">★ Star on GitHub <span class="count" id="stars" hidden></span></a>
           <a class="btn" href="#start">Quick start</a>
         </div>
-        <div class="meta">Free &amp; open source · MIT · Windows 10/11</div>
+        <div class="meta">Free &amp; open source · MIT · Windows · macOS · Linux</div>
       </div>
       <div class="phone"><img src="assets/chat-demo.gif" width="726" height="1276" alt="A Telegram chat: a reel link, the bot's breakdown with one-tap next steps, a build command, an approval request for git init, and the yes."></div>
     </div>
@@ -152,11 +152,11 @@
     <div class="wrap">
       <div class="eyebrow">How it works</div>
       <h2>From "that looks useful" to running on your PC.</h2>
-      <p class="sub">One bot on your own Windows PC. Every reel gets a number and its own worker, so you can keep scrolling and sending.</p>
+      <p class="sub">One bot on your own computer. Every reel gets a number and its own worker, so you can keep scrolling and sending.</p>
       <div class="steps">
         <div class="step"><h3>Send</h3><p>An Instagram reel, a TikTok, a YouTube link, a video file or screenshots. Straight from the share sheet.</p></div>
-        <div class="step"><h3>Understand</h3><p>Gemini watches the whole video with sound and replies with the tools, repos, links and commands it shows. No key? A local watcher takes over.</p></div>
-        <div class="step"><h3>Build</h3><p><code>/plan 4</code>, then <code>/build 4 sonnet</code>. It builds in its own git repo, and every shell command waits for your <code>/yes</code>.</p></div>
+        <div class="step"><h3>Understand</h3><p>Whisper hears it and OCR reads every screen, on your computer: the exact tools, repos, links and commands, with where each appeared. A local model writes the summary; with a key, Gemini can watch instead.</p></div>
+        <div class="step"><h3>Build</h3><p><code>/plan 4</code>, then <code>/build 4 local</code>. An open model builds it in its own git repo, and every shell command waits for your <code>/yes</code>.</p></div>
       </div>
     </div>
   </section>
@@ -167,11 +167,11 @@
       <h2>A research assistant and a builder in one chat.</h2>
       <p class="sub">Everything runs through commands you can tap. Plain words work too: "build 4 with opus".</p>
       <div class="cards">
-        <div class="card"><h3>Honest breakdowns</h3><p>What the video actually shows, not what the caption claims. <code>/deeper 4</code> checks if it's real, what it costs and what's better.</p></div>
-        <div class="card"><h3>Pick your model</h3><p>Haiku, Sonnet, Opus, Fable or Codex, per task or per build. <code>/quota</code> shows what's left.</p></div>
+        <div class="card"><h3>Honest breakdowns</h3><p>What the video actually shows, not what the caption claims. Every command and link is quoted from the screen or the voice-over, never made up. <code>/deeper 4</code> checks each repo and package on GitHub, npm and PyPI.</p></div>
+        <div class="card"><h3>Pick your model</h3><p>An open model on your computer (<code>local</code>, through Ollama or any OpenAI-compatible server), or Haiku, Sonnet, Opus, Fable or Codex, per task or per build.</p></div>
         <div class="card"><h3>Undo anything</h3><p>Each build is a git repo: <code>/diff 4</code> to review, <code>/undo 4</code> to roll back, <code>/deploy 4</code> only when you say so.</p></div>
         <div class="card"><h3>A searchable library</h3><p>Every tool you scrolled past, numbered and tagged. <code>/find</code>, <code>/saved</code>, a Sunday digest.</p></div>
-        <div class="card"><h3>Reminders that fire</h3><p><code>/remind tomorrow 9:00 …</code> is booked in Task Scheduler and pings your phone, with nothing polling.</p></div>
+        <div class="card"><h3>Reminders that fire</h3><p><code>/remind tomorrow 9:00 …</code> pings your phone on time. On Windows it's booked in Task Scheduler, with nothing polling.</p></div>
         <div class="card"><h3>Works with the PC off</h3><p>An optional, free Cloudflare Worker takes over the same bot in a minute or two, and hands it back when the PC starts.</p></div>
       </div>
       <img class="wide" src="assets/cloud-failover.png" width="2560" height="1280" loading="lazy" alt="PC on: your phone talks to the PC bot while a cloud stand-in waits. PC off: the Cloud Worker answers, with the library kept in sync.">
@@ -186,7 +186,7 @@
         <p class="sub">Videos from strangers are data, not instructions. You stay in charge of everything that touches your PC.</p>
         <ul class="checks">
           <li><b>No command without your yes.</b> There's deliberately no unattended mode.</li>
-          <li><b>Reel content is untrusted.</b> Captions, transcripts and Gemini's notes are never followed.</li>
+          <li><b>Reel content is untrusted.</b> Captions, transcripts and model notes are never followed.</li>
           <li><b>Only your account.</b> The bot answers the one Telegram account you pair.</li>
           <li><b>Builds stay in their folder.</b> Writing anywhere else asks first.</li>
           <li><b>Your keys stay yours.</b> The bot itself is blocked from reading them.</li>
@@ -198,14 +198,21 @@
 
   <section id="start">
     <div class="wrap">
-      <div class="eyebrow">Quick start · one command</div>
-      <h2>Up and running on Windows.</h2>
-      <p class="sub">You need Windows 10 or 11, a Claude Pro or Max plan and Telegram. The installer gets Python, Git and Claude Code if they're missing, sets everything up, starts the bot and pairs your phone, asking before each change. The <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/blob/main/docs/Reel%20Agent%20Setup%20Guide.pdf">setup guide (PDF)</a> has a screenshot for every step.</p>
+      <div class="eyebrow">Quick start · any OS</div>
+      <h2>Up and running with open models.</h2>
+      <p class="sub">You need Python 3.11+, Git, <a href="https://ollama.com">Ollama</a> (or any OpenAI-compatible server) and Telegram. No account or API key. Message your bot, approve the pairing code it sends with <code>python reelbot.py pair &lt;code&gt;</code>, then send it a reel.</p>
+<pre>git clone https://github.com/HNF-FRN/Reel-watcher-telegram-Agent.git reel-agent
+cd reel-agent
+pip install -r requirements.txt -r requirements-open.txt
+ollama pull qwen3:8b
+<span class="c"># put TELEGRAM_BOT_TOKEN=&lt;token from @BotFather&gt; in .env</span>
+python reelbot.py</pre>
+      <p class="sub" style="margin:28px 0 12px">On Windows with a Claude Pro or Max plan? One command sets up the Claude Code bot instead (plain-English requests, Claude builds), asking before each change. The <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/blob/main/docs/Reel%20Agent%20Setup%20Guide.pdf">setup guide (PDF)</a> has a screenshot for every step.</p>
 <pre><span class="c"># Node.js first (skip if you have it), then open a new PowerShell window</span>
 winget install OpenJS.NodeJS.LTS
 
 npx reel-agent</pre>
-      <p class="sub" style="margin:28px 0 12px">On macOS or Linux? Watch any video from the terminal, or install the watcher as a Claude Code plugin:</p>
+      <p class="sub" style="margin:28px 0 12px">Just want the video watcher? From any terminal, or as a Claude Code plugin:</p>
 <pre>npx reel-agent watch &lt;link&gt;
 
 <span class="c"># in Claude Code</span>
@@ -218,10 +225,11 @@ npx reel-agent</pre>
     <div class="wrap">
       <div class="eyebrow">FAQ</div>
       <h2>Questions people ask.</h2>
-      <details><summary>Is it free?</summary><p>The code is free and MIT-licensed. Watching uses Gemini's free tier and cloud mode fits Cloudflare's free plan. Planning and building run through Claude Code, so they need a Claude Pro or Max plan (Codex builds use your OpenAI account).</p></details>
-      <details><summary>Does it work on Mac or Linux?</summary><p>The video watcher does, as a Claude Code plugin: <code>/plugin marketplace add HNF-FRN/Reel-watcher-telegram-Agent</code>, then <code>/plugin install reel-watch@reel-agent</code>. The full Telegram bot is Windows-only for now; the parts to port are in <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13">issue #13</a>.</p></details>
+      <details><summary>Is it free?</summary><p>Yes, with open models: the code is MIT-licensed and everything runs on your computer. Optional extras cost what they cost elsewhere: Gemini has a free tier, Claude Code needs a Claude Pro or Max plan, Codex uses your OpenAI account, and cloud mode fits Cloudflare's free plan.</p></details>
+      <details><summary>Does it work on Mac or Linux?</summary><p>Yes: <code>python reelbot.py</code> runs the whole bot (watching, plans, builds with approvals, reminders) on any OS. The Claude Code dispatcher and its one-command installer are Windows-only for now; <a href="https://github.com/HNF-FRN/Reel-watcher-telegram-Agent/issues/13">issue #13</a> tracks porting them.</p></details>
+      <details><summary>Which open models work?</summary><p>Anything an OpenAI-compatible server serves (Ollama, llama.cpp, LM Studio, vLLM). Builds need a model that can call tools: <code>qwen3:8b</code> and bigger work well on a laptop, and the public CI builds and runs a script with <code>qwen2.5:3b</code> on a plain CPU. A vision model such as <code>qwen2.5vl:7b</code> also reads the frames for the summary.</p></details>
       <details><summary>Can a malicious reel take over my PC?</summary><p>Reel content is treated as information only and is marked untrusted when passed to a build. No shell command runs without your <code>/yes</code>, and builds can't write outside their folder without asking.</p></details>
-      <details><summary>Do I need a Gemini key?</summary><p>No. Without one, a local watcher samples frames and transcribes the audio with Whisper. With a free key, Gemini watches the whole video with sound, which gives much better breakdowns.</p></details>
+      <details><summary>Do I need a Gemini key?</summary><p>No. Whisper transcribes the audio, OCR reads every screen and the exact commands and repos are pulled out on your computer; a local model writes the summary. With a key, Gemini watches the whole video with sound, which helps with videos that show more than they say or write.</p></details>
       <details><summary>What happens when my PC is off?</summary><p>With the optional cloud stand-in, a Cloudflare Worker takes over the same bot after about 40 seconds of silence, answers from the cloud, and hands everything back when your PC starts. Nothing extra runs on the PC.</p></details>
     </div>
   </section>
