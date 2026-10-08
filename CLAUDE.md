@@ -75,7 +75,7 @@ Old replies still work: `N 1` = `/plan N`, `N 2` = `/save N`, `N 3` = `/deeper N
 | `/undo N` | Run `B undo N` (no `--yes`) to see what would be lost, tell the user in one line, and only after a clear "yes" run `B undo N --yes`. |
 | `/deploy N` | Run `B deploy N` (no `--yes`) to list what gets copied where, get a clear "yes", then `B deploy N --yes`. |
 
-Model names: `haiku`, `sonnet`, `opus`, `fable`, `codex` (OpenAI through the Codex CLI; plan/build only, no /tell mid-run or approvals: it's sandboxed to its folder). Modes: **normal** (default: edits inside its own folder freely, asks on the phone before every shell command) and **safe** (asks before every edit and command). There is no mode that runs shell commands without asking; if they want fewer prompts, `/always N` allows one command word (like `npm`) for one build.
+Model names: `haiku`, `sonnet`, `opus`, `fable`, `codex` (OpenAI through the Codex CLI; plan/build only, no /tell mid-run or approvals: it's sandboxed to its folder), `local` (an open model on this PC through Ollama or any OpenAI-compatible server, driven by agent.py with the same approvals; `local:<name>` picks the model; plan/build only). Modes: **normal** (default: edits inside its own folder freely, asks on the phone before every shell command) and **safe** (asks before every edit and command). There is no mode that runs shell commands without asking; if they want fewer prompts, `/always N` allows one command word (like `npm`) for one build.
 
 ### Reminders and to-dos
 One list shared with every Claude session on the PC (`R` = `python reminders/remind.py`). Each reminder is booked in Windows Task Scheduler for its exact time and sends itself to the user on Telegram, with `/done` and `/snooze` shortcuts, so you only add, list and change them (the script keeps Task Scheduler in step).
@@ -168,5 +168,5 @@ Send a link, video or screenshots · /jobs · /saved
 /models · `/model build opus` · `/mode safe` · `/limit 45`
 /quota · /pc · /digest · /manual
 
-*Models: haiku · sonnet · opus · fable · codex*
+*Models: haiku · sonnet · opus · fable · codex · local*
 ```

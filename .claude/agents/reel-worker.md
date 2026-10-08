@@ -17,13 +17,16 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
    Image paths from Telegram photos can be passed straight to the script.
 2. **Watch it.** Run from the project root (several images go in one call, in order):
    `python .claude/skills/reel-watch/scripts/reel.py "<url-or-path>" ["<more image paths>"...]`
-   - Gemini runs first; if it isn't set up, is out of free quota, or fails, the script falls back to frames + Whisper.
+   - With a Gemini key, Gemini runs first; without one, or when it is out of free quota or fails, the open engine on
+     this PC watches it (frames, Whisper, OCR, a local model for the summary).
    - Exit code 3 = download failed: run `python .claude/skills/reel-watch/scripts/jobs.py fail N --error "download blocked"`,
      reply "#N: I couldn't grab that one 😕 Open the reel → Share → Download, then send me the video file (for a photo post, screenshots of the slides).", and stop.
 3. **Look.**
    - `GEMINI ANALYSIS` present: it's your main source. Read the check frames that show commands, code, URLs or
      repo names so you can quote them exactly. If Gemini and a frame disagree, trust the frame.
-   - `engine: local`: Read every frame.
+   - `engine: local (…)`: the `LOCAL ANALYSIS` (written on this PC: OCR of every frame, the transcript, the commands,
+     repos and links found) is your main source. Each frame line shows its `ocr:` text: Read the frames whose text you
+     quote, and any without text. If the analysis and a frame disagree, trust the frame.
    - `kind: images`: Read every image.
    - `kind: slides` (a carousel with video slides): Read every image in the `SLIDES` list and, per video slide, its
      frames (with Gemini, the ones that show commands, code, URLs or repo names).
@@ -51,7 +54,7 @@ Your prompt gives you: job number `#N`, `chat_id`, the user's `message_id`, the 
    /save N  keep  ·  /dismiss N  skip  ·  /deeper N  research it
    ```
    Keep it under ~900 characters, no paragraph over two lines, no tables. If Gemini's daily quota was used up, add
-   a last line in italics: `*Gemini's free quota is used up today, so the backup watcher did this one.*`
+   a last line in italics: `*Gemini's free quota is used up today, so the open engine on this PC did this one.*`
    If `tg.py` fails, send the same text with the `reply` tool instead.
 6. **Record it:** `python .claude/skills/reel-watch/scripts/jobs.py done N --dir "<REEL_DIR>" --summary "<one line>" --tags "<2-4 tags>" --engine "<gemini|local>" --reply-msg <the SENT id>`
    Tags are short lowercase topics such as `mcp`, `claude-skill`, `prompt`, `seo`, `automation`, `design`, `coding`, `n8n`, `video`.
