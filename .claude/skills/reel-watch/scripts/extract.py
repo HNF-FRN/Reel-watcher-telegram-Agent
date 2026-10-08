@@ -90,6 +90,8 @@ TOOL_RES = [(t, re.compile(rf"(?<![\w.-]){re.escape(t)}(?![\w-])", re.I if t.low
             for t in TOOLS]
 REPO_ARG = re.compile(r"^[A-Za-z0-9][\w.-]*/[A-Za-z0-9][\w.-]*$")
 PACKAGE = re.compile(r"^(?:@[\w.-]+/)?[\w.-]+$")
+SPACED_LINK = re.compile(rf"(?<![\w-])[\w-]+ ?\. ?(?:{TLDS}) ?/(?:[^\s/]+| (?=[-./_]\w)|(?<=[-./_]) (?=\w)|/)*", re.I)
+SCREEN = ("screen", "image", "slide")
 
 
 def stamp(seconds):
@@ -106,9 +108,12 @@ def spoken(text):
     return t
 
 
-def ocr_fixes(text):
-    """Typical OCR slips that break links: "https //x" and "https: //x"."""
-    return re.sub(r"\b(https?)\s*:?\s+//", r"\1://", text, flags=re.I)
+def ocr_fixes(text, screen=False):
+    """Typical OCR slips that break links: "https //x" and "https: //x". On screen text (screen=True), also the
+    stray spaces OCR puts into links set in monospace fonts: "github. com/HNF -FRN/x" -> "github.com/HNF-FRN/x".
+    Only a space touching one side of . / - _ inside a link goes, so " - " in a sentence stays."""
+    text = re.sub(r"\b(https?)\s*:?\s+//", r"\1://", text, flags=re.I)
+    return SPACED_LINK.sub(lambda m: m.group(0).replace(" ", ""), text) if screen else text
 
 
 def trim(text):
@@ -263,7 +268,7 @@ def find_all(texts):
         if not text:
             continue
         speech = where.startswith("said")
-        text = ocr_fixes(spoken(text) if speech else text)
+        text = ocr_fixes(spoken(text) if speech else text, screen=where.startswith(SCREEN))
         for raw in URL_RE.findall(text):
             url = trim(raw)
             found.add("links", url, where)
