@@ -7,6 +7,9 @@ Safety model: a build may edit files inside its own folder (normal mode) or must
 Every shell command is sent to the user's phone for /yes or /no, unless the user allowed that one command word
 for that one build with /always. Nothing is ever installed outside the folder without /deploy + a yes.
 
+Models: haiku, sonnet, opus, fable (Claude Code), codex (Codex CLI), or local / local:<name>: an open model
+on any OpenAI-compatible server (Ollama by default, see llm.py) driven by agent.py, with the same approvals.
+
     build.py plan N [--model M] [--note TEXT]            research + write PLAN.md, no changes
     build.py start N [--model M] [--mode safe|normal] [--limit MIN] [--note TEXT] [--fresh]
     build.py tell N TEXT                                 message a running build (or continue a finished one)
@@ -30,12 +33,12 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import (BUILD_MODELS, BUILDS, CLAUDE_USAGE, CONFIG, GEMINI_MODELS, GIT_ID, MODES, REELS, SCRIPTS,  # noqa: E402
-                    TASKS, claude_usage_record, clean_env, find_exe, gemini_usage, load_config, now, pid_alive,
-                    read_json, seconds_to_pacific_midnight, utf8_stdio, write_json)
+from common import (BUILD_MODELS, BUILDS, CLAUDE_MODELS, CLAUDE_USAGE, CONFIG, GEMINI_MODELS, GIT_ID, MODES,  # noqa: E402
+                    NO_WINDOW, REELS, SCRIPTS, TASKS, background, claude_usage_record, clean_env, find_exe,
+                    gemini_usage, is_local, load_config, load_env, now, pid_alive, read_json,
+                    seconds_to_pacific_midnight, utf8_stdio, write_json)
 
 JOBS = REELS / "jobs.json"
-NO_WINDOW = 0x08000000
 RUNNING = ("running", "waiting-approval")
 
 
@@ -113,7 +116,7 @@ def launch(d, message, resume=False):
     msg_file.write_text(message, encoding="utf-8")
     args = [sys.executable, str(SCRIPTS / "runner.py"), str(d), str(msg_file)] + (["--resume"] if resume else [])
     out = open(d / ".reel" / "runner.out", "a", encoding="utf-8")
-    p = subprocess.Popen(args, cwd=d, stdin=subprocess.DEVNULL, stdout=out, stderr=out, creationflags=NO_WINDOW)
+    p = subprocess.Popen(args, cwd=d, stdin=subprocess.DEVNULL, stdout=out, stderr=out, **background())
     st = state(d)
     st.update(runner_pid=p.pid, status="running")
     save_state(d, st)
@@ -146,6 +149,14 @@ def cmd_plan_or_start(a, kind):
     cfg = load_config()
     n = a.n
     job(n)
+    model = (a.model or cfg["models"]["plan" if kind == "plan" else "build"]).lower()
+    if model not in BUILD_MODELS and not model.startswith(("claude-", "local:")):
+        die(f"Unknown model '{model}'. Use one of: {', '.join(BUILD_MODELS)} (or local:<model name>)")
+    if is_local(model):
+        import llm  # noqa: PLC0415
+        if not llm.resolve(model.partition(":")[2] or None):
+            die(f"No model server answered at {(llm.config() or {}).get('url', 'REEL_LLM_URL')}. Start Ollama with "
+                "a model that can use tools (ollama pull qwen3:8b), or set REEL_LLM_URL / REEL_LLM_MODEL in .env.")
     d = build_dir(n)
     if d and is_running(state(d)):
         die(f"#{n} is already running ({state(d).get('kind')}). /peek {n} · /stop {n}")
@@ -160,9 +171,6 @@ def cmd_plan_or_start(a, kind):
     d = d or build_dir(n, create=True)
     base = init_repo(d, n)
     st = state(d)
-    model = (a.model or cfg["models"]["plan" if kind == "plan" else "build"]).lower()
-    if model not in BUILD_MODELS and not model.startswith("claude-"):
-        die(f"Unknown model '{model}'. Use one of: {', '.join(BUILD_MODELS)}")
     mode = "safe" if kind == "plan" else (getattr(a, "mode", None) or cfg["mode"])
     if mode not in MODES:
         mode = "normal"
@@ -390,6 +398,12 @@ def cmd_quota(a):
     print(f"  ≈ {total_left} Gemini watches left today, then the backup watcher takes over.")
     print("  (Counts this PC's requests only. Exact numbers: aistudio.google.com → Usage.)")
 
+    import llm  # noqa: PLC0415
+    local = llm.resolve()
+    print("\n🖥 Local model (open engine and `local` builds): " + (
+        f"{llm.describe(local)}, no limits" if local else "models switched off (REEL_LLM=off)" if not llm.config()
+        else f"none answering at {llm.config()['url']}"))
+
     if a.refresh:
         refresh_claude_usage()
     c = read_json(CLAUDE_USAGE, {}) or {}
@@ -431,14 +445,20 @@ def cmd_pc(a):
     if started.get("at"):
         mins = int((datetime.now() - datetime.strptime(started["at"], "%Y-%m-%d %H:%M")).total_seconds() // 60)
         up = f"{mins // 1440}d {mins % 1440 // 60}h {mins % 60}m"
-    total, _, free = shutil.disk_usage("C:\\")
-    reels_mb = sum(f.stat().st_size for f in REELS.rglob("*") if f.is_file()) / 1e6
+    drive = REELS.resolve().anchor or "/"
+    total, _, free = shutil.disk_usage(drive)
+    reels_mb = sum(f.stat().st_size for f in REELS.rglob("*") if f.is_file()) / 1e6 if REELS.exists() else 0
     builds_mb = sum(f.stat().st_size for f in BUILDS.rglob("*") if f.is_file()) / 1e6 if BUILDS.exists() else 0
     jobs = (read_json(JOBS, {}) or {}).get("jobs", {})
     g = gemini_usage()
-    ytdlp = subprocess.run(["yt-dlp", "--version"], capture_output=True, text=True).stdout.strip()
+    try:
+        ytdlp = subprocess.run(["yt-dlp", "--version"], capture_output=True, text=True,
+                               creationflags=NO_WINDOW).stdout.strip()
+    except OSError:
+        ytdlp = "not installed"
     print(f"🖥 PC ok · bot up {up} (started {started.get('at', '?')}, {started.get('count', 0)} starts total)")
-    print(f"Disk C: {free / 1e9:.0f} GB free of {total / 1e9:.0f} GB · reels {reels_mb:.0f} MB · builds {builds_mb:.0f} MB")
+    print(f"Disk {drive}: {free / 1e9:.0f} GB free of {total / 1e9:.0f} GB · reels {reels_mb:.0f} MB · "
+          f"builds {builds_mb:.0f} MB")
     print(f"Running: {sum(1 for j in jobs.values() if j['status'] == 'running')} watching · "
           f"{sum(1 for _, st in all_builds() if is_running(st))} building")
     print(f"Gemini today: {sum(m.get('requests', 0) for m in (g.get('models') or {}).values())} requests, "
@@ -453,16 +473,17 @@ def cmd_config(a):
         print("Models: " + ", ".join(f"{t} = {cfg['models'][t]}" for t in TASKS))
         print(f"Build mode: {cfg['mode']} · time limit: {cfg['limit_min']} min · approval timeout: "
               f"{cfg['approval_timeout_min']} min · budget per run: {cfg['budget_usd'] or 'none'}")
-        print(f"Model choices: {', '.join(BUILD_MODELS)} (codex = OpenAI via your Codex CLI, plan/build only) · "
+        print(f"Model choices: {', '.join(BUILD_MODELS)} (codex = OpenAI via your Codex CLI, local = an open model "
+              f"on your Ollama or other OpenAI-compatible server, local:<name> picks one; both plan/build only) · "
               f"modes: {', '.join(MODES)}")
         return
     key = args[0]
     if key == "model" and len(args) == 3:
         task, model = args[1], args[2]
-        allowed = BUILD_MODELS if task in ("plan", "build") else BUILD_MODELS[:-1]
+        allowed = BUILD_MODELS if task in ("plan", "build") else CLAUDE_MODELS
         if task not in TASKS:
             die(f"Task must be one of: {', '.join(TASKS)}")
-        if model not in allowed:
+        if model not in allowed and not (task in ("plan", "build") and model.startswith("local:")):
             die(f"Model for {task} must be one of: {', '.join(allowed)}")
         cfg["models"][task] = model
     elif key == "mode" and len(args) == 2 and args[1] in MODES:
@@ -481,6 +502,7 @@ def cmd_config(a):
 
 def main():
     utf8_stdio()
+    load_env()  # REEL_LLM_* for local plans and builds
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("plan", "start"):
