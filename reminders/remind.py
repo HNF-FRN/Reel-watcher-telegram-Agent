@@ -1,10 +1,10 @@
 """remind.py - one to-do / reminder list shared by every Claude session and the Telegram bot.
 
 Reminders live in this folder (reminders.json, mirrored to REMINDERS.md for reading), so they survive the
-session that created them. Nothing polls: every upcoming reminder gets its own one-time Windows Task Scheduler
+session that created them. On Windows nothing polls: every upcoming reminder gets its own one-time Task Scheduler
 entry (Task Scheduler folder "ClaudeReminders") that fires once at that minute, sends it to the owner's Telegram through the
 Reel Agent bot, and is cleaned up afterwards. "Run as soon as possible if missed" plus one check at logon catch
-reminders that came due while the PC was off.
+reminders that came due while the PC was off. On macOS and Linux the bot (reelbot.py) runs `send-due` every minute.
 
     python remind.py add "text" [--at "2026-09-23 09:00" | --at "tomorrow 9:00" | --in 2h] [--every day|weekday|week|month]
                      [--note "details"] [--source "which session / project"]
@@ -30,13 +30,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / ".claude" / "skills" / "reel-watch" / "scripts"))
-from common import locked_json, utf8_stdio  # noqa: E402
+from common import NO_WINDOW, locked_json, utf8_stdio  # noqa: E402
 
-DATA = HERE / "reminders.json"
-VIEW = HERE / "REMINDERS.md"
+DATA_DIR = Path(os.environ["REEL_HOME"]).expanduser().resolve() / "reminders" if os.environ.get("REEL_HOME") else HERE
+DATA = DATA_DIR / "reminders.json"
+VIEW = DATA_DIR / "REMINDERS.md"
 TASK_PATH = "\\ClaudeReminders\\"
-NO_WINDOW = 0x08000000
 FMT = "%Y-%m-%d %H:%M"
+WINDOWS = os.name == "nt"
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
@@ -173,6 +174,8 @@ def sync(data, retry_minutes=2):
         if at <= now:  # overdue but not sent yet (PC was off, or sending failed): try again shortly
             at = now + timedelta(minutes=retry_minutes)
         desired.append({"name": f"Reminder-{rid}", "at": at.strftime(FMT)})
+    if not WINDOWS:  # no Task Scheduler: reelbot.py runs send-due every minute instead
+        return len(desired)
     exe, args = runner_cmd()
     script = f"""
 $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'
@@ -251,6 +254,10 @@ def main():
         sub.add_parser(name)
     a = ap.parse_args()
 
+    if a.cmd in ("install", "uninstall") and not WINDOWS:
+        print("Task Scheduler is Windows only. On macOS and Linux the bot (reelbot.py) sends due reminders itself; "
+              "without it, run `python remind.py send-due` every minute (cron: * * * * *).")
+        return
     if a.cmd == "install":
         install()
         with store(write=False) as data:
